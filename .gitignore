@@ -1,0 +1,4 @@
+﻿.devcontainer/pukiwiki/
+node_modules/
+dist/
+coverage/

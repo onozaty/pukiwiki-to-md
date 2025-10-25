@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+      - app-node-modules:/workspaces/app/node_modules
+    command: sleep infinity
+    environment:
+      TZ: Asia/Tokyo
+
+  pukiwiki:
+    image: arqtanjp/pukiwiki:1.5.4-git
+    ports:
+      - 8080:80
+    restart: unless-stopped
+    volumes:
+      - ./pukiwiki:/ext
+
+volumes:
+  app-node-modules:
