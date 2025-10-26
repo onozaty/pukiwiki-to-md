@@ -21,9 +21,21 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert heading with space after asterisk", () => {
+      const input = "* はじめに";
+      const expected = "# はじめに";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should not convert asterisks in the middle of line", () => {
       const input = "This is * not a heading";
       expect(convertToMarkdown(input, "テストページ")).toBe(input);
+    });
+
+    it("should handle asterisks without content", () => {
+      const input = "*";
+      const expected = "# ";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert multiple headings", () => {
@@ -69,9 +81,96 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(input);
     });
 
-    it("should not convert three dashes", () => {
+    it("should not convert three dashes (it becomes level 3 list)", () => {
       const input = "---";
-      expect(convertToMarkdown(input, "テストページ")).toBe(input);
+      const expected = "        - ";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+  });
+
+  describe("list conversion", () => {
+    describe("unordered list", () => {
+      it("should convert level 1 unordered list", () => {
+        const input = "-項目1";
+        const expected = "- 項目1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert level 2 unordered list", () => {
+        const input = "--項目1-1";
+        const expected = "    - 項目1-1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert level 3 unordered list", () => {
+        const input = "---項目1-1-1";
+        const expected = "        - 項目1-1-1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert multiple unordered list items", () => {
+        const input = "-項目1\n--項目1-1\n---項目1-1-1\n-項目2";
+        const expected = "- 項目1\n    - 項目1-1\n        - 項目1-1-1\n- 項目2";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert when dash has space after it", () => {
+        const input = "- スペースがある場合も変換する";
+        const expected = "- スペースがある場合も変換する";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle dash without content", () => {
+        const input = "-";
+        const expected = "- ";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+    });
+
+    describe("ordered list", () => {
+      it("should convert level 1 ordered list", () => {
+        const input = "+番号1";
+        const expected = "1. 番号1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert level 2 ordered list", () => {
+        const input = "++番号1-1";
+        const expected = "    1. 番号1-1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert level 3 ordered list", () => {
+        const input = "+++番号1-1-1";
+        const expected = "        1. 番号1-1-1";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert multiple ordered list items", () => {
+        const input = "+項目1\n++項目1-1\n+++項目1-1-1\n+項目2";
+        const expected = "1. 項目1\n    1. 項目1-1\n        1. 項目1-1-1\n1. 項目2";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert when plus has space after it", () => {
+        const input = "+ スペースがある場合も変換する";
+        const expected = "1. スペースがある場合も変換する";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle plus without content", () => {
+        const input = "+";
+        const expected = "1. ";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+    });
+
+    describe("mixed lists", () => {
+      it("should handle unordered and ordered lists together", () => {
+        const input = "-箇条書き\n+番号付き\n--ネスト";
+        const expected = "- 箇条書き\n1. 番号付き\n    - ネスト";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
     });
   });
 
@@ -108,21 +207,71 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
-    it("should not convert syntax that doesn't match heading pattern", () => {
-      const input = "* This is not a heading (has space after asterisk)";
-      const expected = "* This is not a heading (has space after asterisk)";
-      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
-    });
-
-    it("should correctly handle valid and invalid syntax mix", () => {
-      const input = "* Not heading\n*Valid heading\n>Quote\nNormal text";
-      const expected = "* Not heading\n# Valid heading\n> Quote\nNormal text";
+    it("should correctly handle valid syntax mix", () => {
+      const input = "* Space heading\n*NoSpace heading\n>Quote\nNormal text";
+      const expected = "# Space heading\n# NoSpace heading\n> Quote\nNormal text";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should preserve empty lines", () => {
       const input = "*Heading\n\n\n>Quote";
       const expected = "# Heading\n\n\n> Quote";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+  });
+
+  describe("inline text formatting", () => {
+    it("should convert bold text", () => {
+      const input = "これは''太字''です";
+      const expected = "これは**太字**です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert italic text", () => {
+      const input = "これは'''イタリック'''です";
+      const expected = "これは*イタリック*です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert strikethrough text", () => {
+      const input = "これは%%取り消し%%です";
+      const expected = "これは~~取り消し~~です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert line break", () => {
+      const input = "1行目&br;2行目";
+      const expected = "1行目<br>2行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple formatting in one line", () => {
+      const input = "''太字''と'''イタリック'''と%%取り消し%%";
+      const expected = "**太字**と*イタリック*と~~取り消し~~";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple line breaks", () => {
+      const input = "1行目&br;2行目&br;3行目";
+      const expected = "1行目<br>2行目<br>3行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle inline formatting in headings", () => {
+      const input = "*''太字の見出し''";
+      const expected = "# **太字の見出し**";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle inline formatting in lists", () => {
+      const input = "-''太字''の項目";
+      const expected = "- **太字**の項目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle inline formatting in quotes", () => {
+      const input = ">''太字''の引用";
+      const expected = "> **太字**の引用";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
   });
