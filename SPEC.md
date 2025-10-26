@@ -440,8 +440,9 @@ PukiWikiのプラグインはMarkdownには直接対応するものがないた�
 | ステータス | 意味 | 使用場面 |
 |----------|------|--------|
 | SUCCESS | 処理成功 | ページ変換成功、添付ファイルコピー成功 |
-| SKIP | 処理スキップ | 設定ファイル除外、変換対象外ファイル |
 | ERROR | 処理失敗 | デコード失敗、変換エラー、ファイル操作エラー |
+
+**注**: 処理対象外のファイル(`:config`ファイル、`.log`ファイル、アンダースコアを含まないファイルなど)は、ファイル収集段階で除外されるため、ログには出力されません。
 
 #### 7.2.3 出力例
 
@@ -451,15 +452,19 @@ Wiki folder: /path/to/pukiwiki/wiki
 Attach folder: /path/to/pukiwiki/attach
 Output folder: /path/to/output
 
+Wiki files: 45
+Attachment files: 12
+
 [SUCCESS] wiki/A4D7A4EDA4B8A4A7A4AFA4C8.txt → output/プロジェクト.md (converted)
 [SUCCESS] wiki/A4D7A4EDA4B8A4A7A4AFA4C82FA4BFA4B9.txt → output/プロジェクト/タスク.md (converted)
 [SUCCESS] attach/A4D7A4EDA4B8A4A7A4AFA4C8_A5C0A5A4A5A2A5B0A5E9A5E02E706E67 → output/プロジェクト_attachment_ダイアグラム.png (attachment copied)
-[SKIP] wiki/3AConfig2FPlugin.txt → (config file)
 [ERROR] wiki/XYZ123.txt → (failed to decode filename)
 [ERROR] wiki/A4C6A4B9A4C8.txt → output/テスト.md (encoding conversion failed)
 
 Conversion completed.
 ```
+
+**注**: 処理対象ファイルの件数は、`:config`ファイルや`.log`ファイルなどを除外した後の数値です。
 
 ### 7.3 サマリー出力
 
@@ -468,10 +473,8 @@ Conversion completed.
 ```
 Completed:
 - Pages converted: 45
-- Pages skipped: 3
 - Page errors: 2
 - Attachments copied: 12
-- Attachments skipped: 0
 - Attachment errors: 1
 
 Output folder: /path/to/output
@@ -482,11 +485,11 @@ Output folder: /path/to/output
 | 項目 | 説明 |
 |------|------|
 | Pages converted | 正常に変換されたページ数 |
-| Pages skipped | スキップされたページ数(設定ファイルなど) |
 | Page errors | 変換に失敗したページ数 |
 | Attachments copied | 正常にコピーされた添付ファイル数 |
-| Attachments skipped | スキップされた添付ファイル数 |
 | Attachment errors | コピーに失敗した添付ファイル数 |
+
+**注**: スキップされたファイル(`:config`ファイル、`.log`ファイルなど)は統計に含まれません。これらは処理対象として収集されないため、カウントされません。
 
 ---
 

@@ -13,7 +13,10 @@ export default defineConfig([
   },
   tseslint.configs.recommended,
   {
-    ignores: ["src/generated/**"], // orval generated file
+    ignores: [
+      ".devcontainer/**", // devcontainer files
+      "dist/**", // build output
+    ],
   },
   {
     files: ["**/*.test.ts"],
