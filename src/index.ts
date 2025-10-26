@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { processConversion } from "./processor.js";
-import { exists } from "./file-io.js";
+import { processConversion } from "./processor";
+import { exists } from "./file-io";
 
 const program = new Command();
 

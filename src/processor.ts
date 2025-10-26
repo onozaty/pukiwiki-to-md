@@ -1,12 +1,13 @@
 import * as path from "node:path";
-import { decodeFileName, splitPagePath } from "./utils.js";
+import { convertToMarkdown } from "./converter";
+import { decodeFileName, splitPagePath } from "./utils";
 import {
   readWikiFile,
   copyAttachment,
   writeMarkdown,
   ensureDir,
   getFiles,
-} from "./file-io.js";
+} from "./file-io";
 
 export type ConversionStats = {
   pagesConverted: number;
@@ -88,11 +89,14 @@ const processWikiFile = async (
 
     const outputPath = path.join(outputSubDir, `${name}.md`);
 
-    // Read wiki file (no syntax conversion yet, just copy content)
+    // Read wiki file
     const content = await readWikiFile(filePath, encoding);
 
+    // Convert PukiWiki syntax to Markdown
+    const converted = convertToMarkdown(content, pageName);
+
     // Write as markdown
-    await writeMarkdown(outputPath, content);
+    await writeMarkdown(outputPath, converted);
 
     return { success: true, outputPath };
   } catch (error) {

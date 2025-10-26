@@ -13,6 +13,14 @@ export default defineConfig([
   },
   tseslint.configs.recommended,
   {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     ignores: [
       ".devcontainer/**", // devcontainer files
       "dist/**", // build output

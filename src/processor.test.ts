@@ -7,8 +7,8 @@ import {
   createTempDir,
   createTestFiles,
   getAllFiles,
-} from "../test/utils.js";
-import { processConversion } from "./processor.js";
+} from "../test/utils";
+import { processConversion } from "./processor";
 
 let testDir: string;
 let wikiDir: string;

@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { convertEncoding } from "./utils.js";
+import { convertEncoding } from "./utils";
 
 /**
  * Read wiki file and convert encoding to UTF-8

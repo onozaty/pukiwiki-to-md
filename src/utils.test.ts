@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { decodeFileName, splitPagePath } from "./utils.js";
+import { describe, expect, it } from "vitest";
+import { decodeFileName, splitPagePath } from "./utils";
 
 describe("decodeFileName", () => {
   it("should decode EUC-JP encoded filename", () => {
