@@ -7,6 +7,23 @@
 import path from "path";
 
 /**
+ * Table cell representation
+ */
+interface TableCell {
+  content: string;
+  align?: "left" | "center" | "right";
+  isHeader: boolean;
+}
+
+/**
+ * Table row representation
+ */
+interface TableRow {
+  cells: TableCell[];
+  type: "h" | "f" | "c" | "";
+}
+
+/**
  * Convert PukiWiki content to Markdown
  *
  * @param content - PukiWiki content
@@ -18,7 +35,38 @@ export const convertToMarkdown = (
   pageName: string,
 ): string => {
   const lines = content.split("\n");
-  const convertedLines = lines.map((line) => convertLine(line, pageName));
+  const convertedLines: string[] = [];
+  let tableBuffer: TableRow[] = [];
+  let inTable = false;
+
+  for (const line of lines) {
+    const tableRow = parseTableRow(line);
+
+    if (tableRow) {
+      // Table row detected - add to buffer
+      tableBuffer.push(tableRow);
+      inTable = true;
+    } else {
+      // Non-table row detected
+      if (inTable) {
+        // End of table - convert and output buffered table
+        const markdownTable = generateMarkdownTable(tableBuffer);
+        convertedLines.push(...markdownTable);
+        tableBuffer = [];
+        inTable = false;
+      }
+
+      // Convert and output non-table line
+      convertedLines.push(convertLine(line, pageName));
+    }
+  }
+
+  // Handle remaining table at end of content
+  if (inTable && tableBuffer.length > 0) {
+    const markdownTable = generateMarkdownTable(tableBuffer);
+    convertedLines.push(...markdownTable);
+  }
+
   return convertedLines.join("\n");
 };
 
@@ -336,42 +384,42 @@ const parseRefParameters = (
   for (const param of params) {
     // Check for percentage: 50% or 50.5%
     const percentMatch = param.match(/^(\d+(?:\.\d+)?)%$/);
-    if (percentMatch) {
+    if (percentMatch && percentMatch[1]) {
       size = { percentage: percentMatch[1] };
       continue;
     }
 
     // Check for width x height: 300x200
     const whMatch = param.match(/^(\d+)x(\d+)$/);
-    if (whMatch) {
+    if (whMatch && whMatch[1] && whMatch[2]) {
       size = { width: whMatch[1], height: whMatch[2] };
       continue;
     }
 
     // Check for width only: 300x
     const wMatch = param.match(/^(\d+)x$/);
-    if (wMatch) {
+    if (wMatch && wMatch[1]) {
       size = { width: wMatch[1] };
       continue;
     }
 
     // Check for height only: x200
     const hMatch = param.match(/^x(\d+)$/);
-    if (hMatch) {
+    if (hMatch && hMatch[1]) {
       size = { height: hMatch[1] };
       continue;
     }
 
     // Check for width in pixels: 300w
     const wPixelMatch = param.match(/^(\d+)w$/);
-    if (wPixelMatch) {
+    if (wPixelMatch && wPixelMatch[1]) {
       size = { width: wPixelMatch[1] };
       continue;
     }
 
     // Check for height in pixels: 200h
     const hPixelMatch = param.match(/^(\d+)h$/);
-    if (hPixelMatch) {
+    if (hPixelMatch && hPixelMatch[1]) {
       size = { height: hPixelMatch[1] };
       continue;
     }
@@ -473,4 +521,135 @@ const convertAttachments = (text: string, currentPage: string): string => {
     (_, filename, params) =>
       convertAttachmentReference(filename, params, attachmentPageName),
   );
+};
+
+/**
+ * Parse a table cell from PukiWiki format
+ *
+ * @param cellText - Cell text
+ * @returns Parsed table cell
+ */
+const parseTableCell = (cellText: string): TableCell => {
+  let content = cellText.trim();
+  let isHeader = false;
+
+  // Detect alignment specification
+  const alignMatch = content.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
+  let align: "left" | "center" | "right" | undefined = undefined;
+  if (alignMatch && alignMatch[1] && alignMatch[2] !== undefined) {
+    align = alignMatch[1].toLowerCase() as "left" | "center" | "right";
+    content = alignMatch[2];
+  }
+
+  // Detect ~ header cell
+  if (content.startsWith("~")) {
+    isHeader = true;
+    content = content.substring(1);
+  }
+
+  const result: TableCell = { content, isHeader };
+  if (align !== undefined) {
+    result.align = align;
+  }
+  return result;
+};
+
+/**
+ * Parse a table row from PukiWiki format
+ *
+ * @param line - Line to parse
+ * @returns Parsed table row or null if not a table row
+ */
+const parseTableRow = (line: string): TableRow | null => {
+  const match = line.match(/^\|(.+)\|([hfc])?$/);
+  if (!match || !match[1]) return null;
+
+  const cellsText = match[1];
+  const type = (match[2] || "") as "h" | "f" | "c" | "";
+  const cells = cellsText.split("|").map(parseTableCell);
+
+  return { cells, type };
+};
+
+/**
+ * Determine column alignments from table rows
+ *
+ * @param rows - Table rows
+ * @param columnCount - Number of columns
+ * @returns Array of column alignments
+ */
+const determineColumnAligns = (
+  rows: TableRow[],
+  columnCount: number,
+): ("left" | "center" | "right")[] => {
+  const aligns: ("left" | "center" | "right")[] = [];
+
+  for (let col = 0; col < columnCount; col++) {
+    let align: "left" | "center" | "right" = "left";
+
+    // Find first row with alignment specification for this column
+    for (const row of rows) {
+      const cell = row.cells[col];
+      if (cell && cell.align) {
+        align = cell.align;
+        break;
+      }
+    }
+
+    aligns.push(align);
+  }
+
+  return aligns;
+};
+
+/**
+ * Generate Markdown table from table rows
+ *
+ * @param rows - Table rows
+ * @returns Array of Markdown lines
+ */
+const generateMarkdownTable = (rows: TableRow[]): string[] => {
+  if (rows.length === 0) return [];
+
+  const result: string[] = [];
+  const firstRow = rows[0];
+  if (!firstRow) return [];
+
+  const columnCount = firstRow.cells.length;
+
+  // Determine column alignments
+  const columnAligns = determineColumnAligns(rows, columnCount);
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+
+    // Skip c (column width) and f (footer) rows
+    if (row.type === "c" || row.type === "f") continue;
+
+    // Generate cell contents
+    const cells = row.cells.map((cell) => {
+      let content = cell.content;
+      // Convert ~ header cells to bold
+      if (cell.isHeader) {
+        content = `**${content}**`;
+      }
+      return content;
+    });
+
+    // Generate Markdown row
+    result.push(`| ${cells.join(" | ")} |`);
+
+    // Insert separator row after h (header) row
+    if (row.type === "h") {
+      const separator = columnAligns.map((align) => {
+        if (align === "center") return ":---:";
+        if (align === "right") return "---:";
+        return "---";
+      });
+      result.push(`| ${separator.join(" | ")} |`);
+    }
+  }
+
+  return result;
 };

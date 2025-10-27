@@ -620,6 +620,173 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("table conversion", () => {
+    describe("basic tables", () => {
+      it("should convert simple 2x2 table", () => {
+        const input = "|セル1|セル2|\n|セル3|セル4|";
+        const expected = "| セル1 | セル2 |\n| セル3 | セル4 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle empty cells", () => {
+        const input = "|セル1||\n||セル4|";
+        const expected = "| セル1 |  |\n|  | セル4 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle cells with spaces", () => {
+        const input = "| セル 1 | セル 2 |";
+        const expected = "| セル 1 | セル 2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("header rows", () => {
+      it("should convert table with header row (|h)", () => {
+        const input = "|ヘッダ1|ヘッダ2|h\n|データ1|データ2|";
+        const expected =
+          "| ヘッダ1 | ヘッダ2 |\n| --- | --- |\n| データ1 | データ2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle multiple rows after header", () => {
+        const input = "|名前|年齢|h\n|太郎|25|\n|花子|30|";
+        const expected =
+          "| 名前 | 年齢 |\n| --- | --- |\n| 太郎 | 25 |\n| 花子 | 30 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("column alignment", () => {
+      it("should handle LEFT alignment", () => {
+        const input = "|LEFT:左|データ|h\n|値1|値2|";
+        const expected = "| 左 | データ |\n| --- | --- |\n| 値1 | 値2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle CENTER alignment", () => {
+        const input = "|CENTER:中央|データ|h\n|値1|値2|";
+        const expected = "| 中央 | データ |\n| :---: | --- |\n| 値1 | 値2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle RIGHT alignment", () => {
+        const input = "|RIGHT:右|データ|h\n|値1|値2|";
+        const expected = "| 右 | データ |\n| ---: | --- |\n| 値1 | 値2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle mixed alignments", () => {
+        const input = "|LEFT:左|CENTER:中央|RIGHT:右|h\n|A|B|C|";
+        const expected =
+          "| 左 | 中央 | 右 |\n| --- | :---: | ---: |\n| A | B | C |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should use first occurrence of alignment per column", () => {
+        const input =
+          "|LEFT:ヘッダ1|CENTER:ヘッダ2|h\n|RIGHT:データ1|LEFT:データ2|";
+        const expected =
+          "| ヘッダ1 | ヘッダ2 |\n| --- | :---: |\n| データ1 | データ2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("header cells (~)", () => {
+      it("should convert ~ header cell to bold", () => {
+        const input = "|~見出し|通常|";
+        const expected = "| **見出し** | 通常 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle multiple ~ header cells", () => {
+        const input = "|~列1|~列2|~列3|";
+        const expected = "| **列1** | **列2** | **列3** |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine ~ with |h row", () => {
+        const input = "|~名前|~年齢|h\n|太郎|25|";
+        const expected =
+          "| **名前** | **年齢** |\n| --- | --- |\n| 太郎 | 25 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle ~ with alignment", () => {
+        const input = "|CENTER:~見出し|データ|h";
+        const expected = "| **見出し** | データ |\n| :---: | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("footer and column width rows", () => {
+      it("should skip footer row (|f)", () => {
+        const input = "|ヘッダ|h\n|データ|\n|フッター|f";
+        const expected = "| ヘッダ |\n| --- |\n| データ |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should skip column width row (|c)", () => {
+        const input = "|100|200|c\n|ヘッダ1|ヘッダ2|h\n|データ1|データ2|";
+        const expected =
+          "| ヘッダ1 | ヘッダ2 |\n| --- | --- |\n| データ1 | データ2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("multiple tables", () => {
+      it("should handle multiple tables separated by text", () => {
+        const input = "|表1A|表1B|\n\nテキスト\n\n|表2A|表2B|";
+        const expected = "| 表1A | 表1B |\n\nテキスト\n\n| 表2A | 表2B |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle tables with headings between them", () => {
+        const input = "|データ1|\n\n*見出し\n\n|データ2|";
+        const expected = "| データ1 |\n\n# 見出し\n\n| データ2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("tables with other syntax", () => {
+      it("should handle table after heading", () => {
+        const input = "*見出し\n|列1|列2|h\n|データ1|データ2|";
+        const expected =
+          "# 見出し\n| 列1 | 列2 |\n| --- | --- |\n| データ1 | データ2 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle table before quote", () => {
+        const input = "|データ|\n>引用文";
+        const expected = "| データ |\n> 引用文";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle table with list after", () => {
+        const input = "|データ|\n-リスト項目";
+        const expected = "| データ |\n- リスト項目";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("complex tables", () => {
+      it("should handle table with all features", () => {
+        const input =
+          "|CENTER:~名前|RIGHT:年齢|LEFT:備考|h\n|太郎|25|学生|\n|花子|30|教師|";
+        const expected =
+          "| **名前** | 年齢 | 備考 |\n| :---: | ---: | --- |\n| 太郎 | 25 | 学生 |\n| 花子 | 30 | 教師 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle 3x4 table with header", () => {
+        const input = "|列1|列2|列3|h\n|A|B|C|\n|D|E|F|\n|G|H|I|";
+        const expected =
+          "| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| A | B | C |\n| D | E | F |\n| G | H | I |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+  });
+
   describe("edge cases", () => {
     it("should handle empty string", () => {
       expect(convertToMarkdown("", "テストページ")).toBe("");
