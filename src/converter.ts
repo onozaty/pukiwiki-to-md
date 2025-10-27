@@ -4,6 +4,8 @@
  * Converts PukiWiki syntax to Markdown format
  */
 
+import path from "path";
+
 /**
  * Convert PukiWiki content to Markdown
  *
@@ -24,10 +26,10 @@ export const convertToMarkdown = (
  * Convert a single line from PukiWiki to Markdown
  *
  * @param line - PukiWiki line
- * @param _pageName - Page name (used for attachment references in Phase 2.3)
+ * @param pageName - Page name (used for relative path calculation and attachments)
  * @returns Converted Markdown line
  */
-const convertLine = (line: string, _pageName: string): string => {
+const convertLine = (line: string, pageName: string): string => {
   // Apply block-level conversions (mutually exclusive)
   // Try each conversion in order, stop at first match
   const blockConverters = [
@@ -48,9 +50,10 @@ const convertLine = (line: string, _pageName: string): string => {
 
   // Apply inline conversions (can be combined with block-level)
   converted = convertInlineFormat(converted);
+  converted = convertLinks(converted, pageName);
 
-  // TODO: Apply link and attachment conversions (Phase 2.3)
-  // converted = convertLinks(converted, _pageName);
+  // TODO: Apply attachment conversions (Phase 2.3)
+  // converted = convertAttachments(converted, pageName);
 
   return converted;
 };
@@ -184,6 +187,73 @@ const convertInlineFormat = (text: string): string => {
 
   // Convert line break: &br; → <br>
   converted = converted.replace(/&br;/g, "<br>");
+
+  return converted;
+};
+
+/**
+ * Calculate relative path from current page to target page
+ *
+ * @param currentPage - Current page name (e.g., "プロジェクト/タスク")
+ * @param targetPage - Target page name (e.g., "プロジェクト/概要")
+ * @returns Relative path to target page (e.g., "概要.md")
+ */
+const calculateRelativePath = (
+  currentPage: string,
+  targetPage: string,
+): string => {
+  // Get directory of current page
+  const currentDir = path.dirname(currentPage);
+
+  // Target file path with .md extension
+  const targetPath = `${targetPage}.md`;
+
+  // Calculate relative path
+  // If currentPage has no directory (root level), just use targetPath
+  if (currentDir === ".") {
+    return targetPath;
+  }
+
+  const relativePath = path.relative(currentDir, targetPath);
+  return relativePath;
+};
+
+/**
+ * Convert links from PukiWiki to Markdown
+ *
+ * PukiWiki internal links: [[ページ名]], [[テキスト>ページ名]]
+ * PukiWiki external links: [[テキスト:URL]]
+ * Markdown: [text](url)
+ *
+ * @param text - Text to convert
+ * @param currentPage - Current page name for relative path calculation
+ * @returns Converted text
+ */
+const convertLinks = (text: string, currentPage: string): string => {
+  let converted = text;
+
+  // Convert external links first: [[text:URL]] → [text](URL)
+  converted = converted.replace(
+    /\[\[([^\]]+?):(https?:\/\/[^\]]+?)\]\]/g,
+    (_, linkText, url) => {
+      return `[${linkText}](${url})`;
+    },
+  );
+
+  // Convert internal links with custom text: [[text>page]] → [text](relativePath)
+  converted = converted.replace(
+    /\[\[([^\]>]+?)>([^\]]+?)\]\]/g,
+    (_, linkText, targetPage) => {
+      const relativePath = calculateRelativePath(currentPage, targetPage);
+      return `[${linkText}](${relativePath})`;
+    },
+  );
+
+  // Convert internal links: [[page]] → [page](relativePath)
+  converted = converted.replace(/\[\[([^\]:>]+?)\]\]/g, (_, targetPage) => {
+    const relativePath = calculateRelativePath(currentPage, targetPage);
+    return `[${targetPage}](${relativePath})`;
+  });
 
   return converted;
 };

@@ -148,7 +148,8 @@ describe("convertToMarkdown", () => {
 
       it("should convert multiple ordered list items", () => {
         const input = "+項目1\n++項目1-1\n+++項目1-1-1\n+項目2";
-        const expected = "1. 項目1\n    1. 項目1-1\n        1. 項目1-1-1\n1. 項目2";
+        const expected =
+          "1. 項目1\n    1. 項目1-1\n        1. 項目1-1-1\n1. 項目2";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
 
@@ -209,7 +210,8 @@ describe("convertToMarkdown", () => {
 
     it("should correctly handle valid syntax mix", () => {
       const input = "* Space heading\n*NoSpace heading\n>Quote\nNormal text";
-      const expected = "# Space heading\n# NoSpace heading\n> Quote\nNormal text";
+      const expected =
+        "# Space heading\n# NoSpace heading\n> Quote\nNormal text";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -273,6 +275,93 @@ describe("convertToMarkdown", () => {
       const input = ">''太字''の引用";
       const expected = "> **太字**の引用";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+  });
+
+  describe("link conversion", () => {
+    describe("internal links", () => {
+      it("should convert simple internal link (same directory)", () => {
+        const input = "[[ページB]]";
+        const expected = "[ページB](ページB.md)";
+        expect(convertToMarkdown(input, "ページA")).toBe(expected);
+      });
+
+      it("should convert internal link from root to hierarchy", () => {
+        const input = "[[プロジェクト/タスク]]";
+        const expected = "[プロジェクト/タスク](プロジェクト/タスク.md)";
+        expect(convertToMarkdown(input, "トップページ")).toBe(expected);
+      });
+
+      it("should convert internal link from hierarchy to root", () => {
+        const input = "[[トップページ]]";
+        const expected = "[トップページ](../トップページ.md)";
+        expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+      });
+
+      it("should convert internal link in same directory (sibling pages)", () => {
+        const input = "[[プロジェクト/概要]]";
+        const expected = "[プロジェクト/概要](概要.md)";
+        expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+      });
+
+      it("should convert internal link between different hierarchies (sibling directories)", () => {
+        const input = "[[プロジェクトB/概要]]";
+        const expected = "[プロジェクトB/概要](../プロジェクトB/概要.md)";
+        expect(convertToMarkdown(input, "プロジェクトA/タスク")).toBe(expected);
+      });
+
+      it("should convert internal link with custom text", () => {
+        const input = "[[リンクテキスト>ページB]]";
+        const expected = "[リンクテキスト](ページB.md)";
+        expect(convertToMarkdown(input, "ページA")).toBe(expected);
+      });
+
+      it("should convert internal link with custom text across hierarchy", () => {
+        const input = "[[概要へ>プロジェクト/概要]]";
+        const expected = "[概要へ](概要.md)";
+        expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+      });
+
+      it("should convert multiple internal links", () => {
+        const input = "[[ページA]]と[[ページB]]を参照";
+        const expected = "[ページA](ページA.md)と[ページB](ページB.md)を参照";
+        expect(convertToMarkdown(input, "トップページ")).toBe(expected);
+      });
+    });
+
+    describe("external links", () => {
+      it("should convert external link with HTTP", () => {
+        const input = "[[Example:http://example.com]]";
+        const expected = "[Example](http://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with HTTPS", () => {
+        const input = "[[公式サイト:https://example.com]]";
+        const expected = "[公式サイト](https://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with path", () => {
+        const input = "[[ドキュメント:https://example.com/docs/index.html]]";
+        const expected = "[ドキュメント](https://example.com/docs/index.html)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+    });
+
+    describe("mixed links", () => {
+      it("should handle internal and external links together", () => {
+        const input = "[[内部ページ]]と[[外部:https://example.com]]";
+        const expected =
+          "[内部ページ](内部ページ.md)と[外部](https://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle links with other inline formatting", () => {
+        const input = "''太字''の[[リンク]]";
+        const expected = "**太字**の[リンク](リンク.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
     });
   });
 
