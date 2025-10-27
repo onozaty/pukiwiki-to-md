@@ -20,9 +20,13 @@ export type ConversionStats = {
  * Get wiki files to process
  *
  * @param wikiDir - Wiki directory path
+ * @param encoding - File encoding (used for decoding filenames)
  * @returns Array of wiki file paths to process
  */
-const getWikiFiles = async (wikiDir: string): Promise<string[]> => {
+const getWikiFiles = async (
+  wikiDir: string,
+  encoding: string,
+): Promise<string[]> => {
   const allFiles = await getFiles(wikiDir);
   return allFiles.filter((filePath) => {
     const fileName = path.basename(filePath);
@@ -30,10 +34,18 @@ const getWikiFiles = async (wikiDir: string): Promise<string[]> => {
     if (!fileName.endsWith(".txt")) {
       return false;
     }
-    // Exclude :config files (starts with 3AConfig)
+    // Decode filename to check the actual page name
     const baseName = path.basename(fileName, ".txt");
-    if (baseName.startsWith("3AConfig")) {
-      return false;
+    try {
+      const pageName = decodeFileName(baseName, encoding);
+      // Exclude pages starting with : (colon)
+      // Examples: :config, :RenameLog
+      if (pageName.startsWith(":")) {
+        return false;
+      }
+    } catch {
+      // If decoding fails, include the file (better to process than skip)
+      return true;
     }
     return true;
   });
@@ -172,7 +184,7 @@ export const processConversion = async (
   await ensureDir(outputDir);
 
   // Get files to process
-  const wikiFiles = await getWikiFiles(wikiDir);
+  const wikiFiles = await getWikiFiles(wikiDir, encoding);
   const attachmentFiles = await getAttachmentFiles(attachDir);
 
   // Log file counts

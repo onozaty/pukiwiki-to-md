@@ -33,11 +33,15 @@ describe("processConversion", () => {
     await cleanupTempDir(testDir);
   });
 
-  it("should process wiki files and exclude config files", async () => {
-    // Create test files (テスト in UTF-8)
+  it("should process wiki files and exclude pages starting with colon", async () => {
+    // Create test files
+    // E38386E382B9E38388 = テスト (regular page)
+    // 3A636F6E666967 = :config (should be excluded)
+    // 3A52656E616D654C6F67 = :RenameLog (should be excluded)
     await createTestFiles(wikiDir, {
       "E38386E382B9E38388.txt": "Test content",
-      "3AConfig2FPlugin.txt": "Config content",
+      "3A636F6E666967.txt": "Config content", // :config
+      "3A52656E616D654C6F67.txt": "Rename log", // :RenameLog
     });
 
     const stats = await processConversion(
@@ -47,7 +51,7 @@ describe("processConversion", () => {
       "utf-8",
     );
 
-    // Check output files
+    // Check output files - only regular page should be converted
     const outputFiles = await getAllFiles(outputDir);
     expect(outputFiles).toEqual(["テスト.md"]);
 
