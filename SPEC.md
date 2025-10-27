@@ -290,25 +290,82 @@ output/
 
 ### 5.5 画像・添付ファイル
 
-#### 5.5.1 画像参照
+ファイルの拡張子によって、画像表示（`![]()`またはHTMLの`<img>`タグ）またはファイルリンク（`[]()`）に変換されます。
+
+**画像ファイル拡張子**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.svg`, `.webp`
+
+#### 5.5.1 画像ファイル参照
+
+##### 5.5.1.1 基本形式（サイズ指定なし）
 
 | PukiWiki | Markdown | 備考 |
 |----------|----------|------|
-| `#ref(image.png)` | `![](ページ名_attachment_image.png)` | 同じディレクトリの添付ファイル |
+| `#ref(image.png)` | `![](ページ名_attachment_image.png)` | 画像表示 |
 | `#ref(image.png,テキスト)` | `![テキスト](ページ名_attachment_image.png)` | altテキスト指定 |
+| `&ref(icon.png);` | `![](ページ名_attachment_icon.png)` | 画像表示（インライン） |
+| `&ref(icon.png,アイコン);` | `![アイコン](ページ名_attachment_icon.png)` | altテキスト指定（インライン） |
 
 **例:**
 ```
 ページ名: プロジェクト概要
 入力: #ref(screenshot.png)
-出力: ![](プロジェクト概要_attachment_screenshot.png)
+出力: ![](概要_attachment_screenshot.png)
 ```
 
-#### 5.5.2 添付ファイルリンク
+##### 5.5.1.2 サイズ指定あり（HTMLタグ使用）
+
+サイズ指定がある場合、HTMLの`<img>`タグに変換されます。`#ref`と`&ref`の両方でサポートされています。
+
+| PukiWiki | HTML | 備考 |
+|----------|------|------|
+| `#ref(image.png,300x200)` | `<img src="ページ名_attachment_image.png" width="300" height="200">` | 幅×高さ指定 |
+| `#ref(image.png,300x)` | `<img src="ページ名_attachment_image.png" width="300">` | 幅のみ指定 |
+| `#ref(image.png,x200)` | `<img src="ページ名_attachment_image.png" height="200">` | 高さのみ指定 |
+| `#ref(image.png,300w)` | `<img src="ページ名_attachment_image.png" width="300">` | 幅指定（ピクセル） |
+| `#ref(image.png,200h)` | `<img src="ページ名_attachment_image.png" height="200">` | 高さ指定（ピクセル） |
+| `#ref(image.png,50%)` | `<img src="ページ名_attachment_image.png" style="width: 50%">` | パーセント指定 |
+| `#ref(image.png,300x200,説明)` | `<img src="ページ名_attachment_image.png" alt="説明" width="300" height="200">` | サイズ+altテキスト |
+| `&ref(image.png,300x200,説明);` | `<img src="ページ名_attachment_image.png" alt="説明" width="300" height="200">` | インライン・サイズ指定 |
+
+**サポートされるサイズ形式:**
+- `300x200` - 幅×高さ（ピクセル）
+- `300x` - 幅のみ（ピクセル）
+- `x200` - 高さのみ（ピクセル）
+- `300w` - 幅（ピクセル）
+- `200h` - 高さ（ピクセル）
+- `50%` または `50.5%` - パーセント指定
+
+##### 5.5.1.3 パラメータの扱い
+
+`#ref`と`&ref`の両方で複数のパラメータを指定できます。以下のパラメータは変換時にフィルタされます：
+
+**フィルタされるキーワード:**
+- `left`, `center`, `right` - 配置指定
+- `wrap`, `nowrap`, `around` - テキスト回り込み指定
+- `nolink`, `noicon`, `noimg`, `zoom` - 表示オプション
+
+**テキストパラメータの結合:**
+複数のテキストパラメータはカンマで結合されてaltテキストになります。
+
+**例:**
+```
+入力: #ref(image.png,left,300x200,図1,システム構成)
+出力: <img src="ページ名_attachment_image.png" alt="図1,システム構成" width="300" height="200">
+
+入力: &ref(image.png,center,50%,テスト);
+出力: <img src="ページ名_attachment_image.png" alt="テスト" style="width: 50%">
+```
+
+#### 5.5.2 非画像ファイル参照
 
 | PukiWiki | Markdown | 備考 |
 |----------|----------|------|
-| `&ref(document.pdf);` | `[document.pdf](ページ名_attachment_document.pdf)` | |
+| `#ref(document.pdf)` | `[document.pdf](ページ名_attachment_document.pdf)` | ファイルリンク |
+| `#ref(spec.xlsx,仕様書)` | `[仕様書](ページ名_attachment_spec.xlsx)` | リンクテキスト指定 |
+| `#ref(spec.xlsx,noicon,仕様書,最新版)` | `[仕様書,最新版](ページ名_attachment_spec.xlsx)` | パラメータ付き |
+| `&ref(document.pdf);` | `[document.pdf](ページ名_attachment_document.pdf)` | ファイルリンク |
+
+**注:** 非画像ファイルの場合、サイズ指定パラメータは無視されます。
 
 ### 5.6 引用
 

@@ -365,6 +365,261 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("attachment conversion", () => {
+    describe("image references (#ref)", () => {
+      it("should convert image reference without alt text", () => {
+        const input = "#ref(screenshot.png)";
+        const expected = "![](テストページ_attachment_screenshot.png)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert image reference with alt text", () => {
+        const input = "#ref(diagram.png,システム図)";
+        const expected = "![システム図](テストページ_attachment_diagram.png)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle hierarchical page name", () => {
+        const input = "#ref(screenshot.png)";
+        const expected = "![](タスク_attachment_screenshot.png)";
+        expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+      });
+
+      it("should handle hierarchical page name with alt text", () => {
+        const input = "#ref(diagram.png,図表)";
+        const expected = "![図表](概要_attachment_diagram.png)";
+        expect(convertToMarkdown(input, "プロジェクト/概要")).toBe(expected);
+      });
+
+      it("should convert multiple image references", () => {
+        const input = "#ref(image1.png)と#ref(image2.png,画像2)";
+        const expected =
+          "![](テスト_attachment_image1.png)と![画像2](テスト_attachment_image2.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert non-image file with #ref as link", () => {
+        const input = "#ref(document.pdf)";
+        const expected = "[document.pdf](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert non-image file with #ref and alt text as link", () => {
+        const input = "#ref(spec.xlsx,仕様書)";
+        const expected = "[仕様書](テスト_attachment_spec.xlsx)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("file link references (&ref)", () => {
+      it("should convert file link reference", () => {
+        const input = "&ref(document.pdf);";
+        const expected = "[document.pdf](テストページ_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle hierarchical page name", () => {
+        const input = "&ref(spec.pdf);";
+        const expected = "[spec.pdf](タスク_attachment_spec.pdf)";
+        expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+      });
+
+      it("should convert multiple file references", () => {
+        const input = "&ref(doc1.pdf);と&ref(doc2.xlsx);";
+        const expected =
+          "[doc1.pdf](テスト_attachment_doc1.pdf)と[doc2.xlsx](テスト_attachment_doc2.xlsx)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert image file with &ref as image", () => {
+        const input = "&ref(icon.png);";
+        const expected = "![](テスト_attachment_icon.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should support parameters with &ref for images", () => {
+        const input = "&ref(icon.png,アイコン);";
+        const expected = "![アイコン](テスト_attachment_icon.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should support parameters with &ref for files", () => {
+        const input = "&ref(document.pdf,資料);";
+        const expected = "[資料](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with size for &ref", () => {
+        const input = "&ref(image.png,300x200,説明);";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="説明" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle complex parameters with &ref", () => {
+        const input = "&ref(image.png,left,50%,図表);";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図表" style="width: 50%">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter keywords with &ref", () => {
+        const input = "&ref(image.png,center,nolink,テスト画像);";
+        const expected = "![テスト画像](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("#ref with complex parameters", () => {
+      it("should convert to HTML img tag with width and height (300x200)", () => {
+        const input = "#ref(image.png,300x200,説明文)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="説明文" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with percentage size (50%)", () => {
+        const input = "#ref(image.png,50%,図表)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図表" style="width: 50%">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with width only (300x)", () => {
+        const input = "#ref(image.png,300x,サンプル)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="サンプル" width="300">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with height only (x200)", () => {
+        const input = "#ref(image.png,x200,画像)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="画像" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with width in pixels (300w)", () => {
+        const input = "#ref(image.png,300w,テスト画像)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="テスト画像" width="300">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert to HTML img tag with height in pixels (200h)", () => {
+        const input = "#ref(image.png,200h,スクリーンショット)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="スクリーンショット" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out keyword 'left'", () => {
+        const input = "#ref(image.png,left,左寄せ画像)";
+        const expected = "![左寄せ画像](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out keyword 'center'", () => {
+        const input = "#ref(image.png,center,中央画像)";
+        const expected = "![中央画像](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out keyword 'right'", () => {
+        const input = "#ref(image.png,right,右寄せ)";
+        const expected = "![右寄せ](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out multiple keywords (wrap, nolink)", () => {
+        const input = "#ref(image.png,wrap,nolink,回り込み画像)";
+        const expected = "![回り込み画像](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out keyword 'noicon'", () => {
+        const input = "#ref(document.pdf,noicon,資料)";
+        const expected = "[資料](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter out keyword 'zoom'", () => {
+        const input = "#ref(image.png,zoom,拡大可能)";
+        const expected = "![拡大可能](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle multiple text parameters with size", () => {
+        const input = "#ref(image.png,300x200,システム,構成図)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="システム,構成図" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle mixed keywords, sizes, and text", () => {
+        const input = "#ref(image.png,left,50%,図1,概要)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図1,概要" style="width: 50%">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle all parameters being filtered out (no alt text, with size)", () => {
+        const input = "#ref(image.png,300x200,left,center)";
+        const expected =
+          '<img src="テスト_attachment_image.png" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle decimal percentage (50.5%)", () => {
+        const input = "#ref(image.png,50.5%,テスト)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="テスト" style="width: 50.5%">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle non-image files with complex parameters", () => {
+        const input = "#ref(document.pdf,noicon,left,仕様書,最新版)";
+        const expected = "[仕様書,最新版](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should preserve text parameters with spaces", () => {
+        const input = "#ref(image.png,300x,図 1)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図 1" width="300">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should use Markdown format when no size specification", () => {
+        const input = "#ref(image.png,left,図表)";
+        const expected = "![図表](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle size without alt text", () => {
+        const input = "#ref(image.png,300x200)";
+        const expected =
+          '<img src="テスト_attachment_image.png" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
+    describe("mixed attachments", () => {
+      it("should handle images and file links together", () => {
+        const input = "#ref(image.png)と&ref(document.pdf);";
+        const expected =
+          "![](テスト_attachment_image.png)と[document.pdf](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle attachments with other inline formatting", () => {
+        const input = "''太字''の#ref(image.png)";
+        const expected = "**太字**の![](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+  });
+
   describe("edge cases", () => {
     it("should handle empty string", () => {
       expect(convertToMarkdown("", "テストページ")).toBe("");

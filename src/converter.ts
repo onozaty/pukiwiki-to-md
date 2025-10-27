@@ -51,9 +51,7 @@ const convertLine = (line: string, pageName: string): string => {
   // Apply inline conversions (can be combined with block-level)
   converted = convertInlineFormat(converted);
   converted = convertLinks(converted, pageName);
-
-  // TODO: Apply attachment conversions (Phase 2.3)
-  // converted = convertAttachments(converted, pageName);
+  converted = convertAttachments(converted, pageName);
 
   return converted;
 };
@@ -256,4 +254,223 @@ const convertLinks = (text: string, currentPage: string): string => {
   });
 
   return converted;
+};
+
+/**
+ * Get page name for attachment file naming
+ * Extracts the last part of hierarchical page name
+ *
+ * @param pageName - Full page name (e.g., "プロジェクト/タスク")
+ * @returns Page name for attachment (e.g., "タスク")
+ */
+const getAttachmentPageName = (pageName: string): string => {
+  const lastSlashIndex = pageName.lastIndexOf("/");
+  if (lastSlashIndex === -1) {
+    return pageName;
+  }
+  return pageName.substring(lastSlashIndex + 1);
+};
+
+/**
+ * Check if file is an image based on extension
+ *
+ * @param filename - File name to check
+ * @returns True if image file
+ */
+const isImageFile = (filename: string): boolean => {
+  const imageExtensions = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".svg",
+    ".webp",
+  ];
+  const lowerFilename = filename.toLowerCase();
+  return imageExtensions.some((ext) => lowerFilename.endsWith(ext));
+};
+
+/**
+ * Size specification extracted from #ref parameters
+ */
+interface RefSizeSpec {
+  width?: string;
+  height?: string;
+  percentage?: string;
+}
+
+/**
+ * Parse #ref plugin parameters to extract alt text and size specifications
+ * Filters out keywords and size specifications, keeps only text parameters
+ *
+ * Based on PukiWiki ref.inc.php implementation
+ *
+ * @param paramsString - Comma-separated parameter string after filename
+ * @returns Object containing alt text and size specifications
+ */
+const parseRefParameters = (
+  paramsString: string,
+): { altText: string; size: RefSizeSpec | null } => {
+  if (!paramsString) return { altText: "", size: null };
+
+  const params = paramsString.split(",").map((p) => p.trim());
+
+  // Keywords that should be filtered out
+  const keywords = [
+    "left",
+    "center",
+    "right",
+    "wrap",
+    "nowrap",
+    "around",
+    "nolink",
+    "noicon",
+    "noimg",
+    "zoom",
+  ];
+
+  let size: RefSizeSpec | null = null;
+  const textParams: string[] = [];
+
+  for (const param of params) {
+    // Check for percentage: 50% or 50.5%
+    const percentMatch = param.match(/^(\d+(?:\.\d+)?)%$/);
+    if (percentMatch) {
+      size = { percentage: percentMatch[1] };
+      continue;
+    }
+
+    // Check for width x height: 300x200
+    const whMatch = param.match(/^(\d+)x(\d+)$/);
+    if (whMatch) {
+      size = { width: whMatch[1], height: whMatch[2] };
+      continue;
+    }
+
+    // Check for width only: 300x
+    const wMatch = param.match(/^(\d+)x$/);
+    if (wMatch) {
+      size = { width: wMatch[1] };
+      continue;
+    }
+
+    // Check for height only: x200
+    const hMatch = param.match(/^x(\d+)$/);
+    if (hMatch) {
+      size = { height: hMatch[1] };
+      continue;
+    }
+
+    // Check for width in pixels: 300w
+    const wPixelMatch = param.match(/^(\d+)w$/);
+    if (wPixelMatch) {
+      size = { width: wPixelMatch[1] };
+      continue;
+    }
+
+    // Check for height in pixels: 200h
+    const hPixelMatch = param.match(/^(\d+)h$/);
+    if (hPixelMatch) {
+      size = { height: hPixelMatch[1] };
+      continue;
+    }
+
+    // Check for keywords
+    if (keywords.includes(param.toLowerCase())) {
+      continue;
+    }
+
+    // If none of the above, it's a text parameter
+    textParams.push(param);
+  }
+
+  return { altText: textParams.join(","), size };
+};
+
+/**
+ * Generate HTML img tag with size attributes
+ *
+ * @param src - Image source path
+ * @param alt - Alt text
+ * @param size - Size specification
+ * @returns HTML img tag
+ */
+const generateImageTag = (
+  src: string,
+  alt: string,
+  size: RefSizeSpec,
+): string => {
+  const altAttr = alt ? ` alt="${alt}"` : "";
+
+  if (size.percentage) {
+    return `<img src="${src}"${altAttr} style="width: ${size.percentage}%">`;
+  }
+
+  const attrs: string[] = [];
+  if (size.width) attrs.push(`width="${size.width}"`);
+  if (size.height) attrs.push(`height="${size.height}"`);
+
+  return `<img src="${src}"${altAttr}${attrs.length > 0 ? " " + attrs.join(" ") : ""}>`;
+};
+
+/**
+ * Convert a single attachment reference to Markdown/HTML
+ *
+ * @param filename - File name
+ * @param params - Parameter string (optional)
+ * @param attachmentPageName - Page name for attachment file naming
+ * @returns Converted text
+ */
+const convertAttachmentReference = (
+  filename: string,
+  params: string | undefined,
+  attachmentPageName: string,
+): string => {
+  const attachmentFileName = `${attachmentPageName}_attachment_${filename}`;
+  const { altText, size } = parseRefParameters(params || "");
+
+  if (isImageFile(filename)) {
+    // If size specification exists, use HTML img tag
+    if (size) {
+      return generateImageTag(attachmentFileName, altText, size);
+    }
+    // Otherwise use Markdown format
+    return altText
+      ? `![${altText}](${attachmentFileName})`
+      : `![](${attachmentFileName})`;
+  } else {
+    // Non-image files always use link format (size is ignored)
+    return altText
+      ? `[${altText}](${attachmentFileName})`
+      : `[${filename}](${attachmentFileName})`;
+  }
+};
+
+/**
+ * Convert attachment references from PukiWiki to Markdown
+ *
+ * PukiWiki: #ref(file), #ref(file,params...), &ref(file);, &ref(file,params...);
+ * Markdown: ![alt](file) for images, [alt](file) for other files
+ * HTML: <img> tags when size specifications are present
+ *
+ * Parameters can include keywords (left, center, etc.), size specs (300x200, 50%, etc.),
+ * and text parameters. Only text parameters are used as alt text.
+ * Size specifications result in HTML img tags to preserve dimensions.
+ *
+ * @param text - Text to convert
+ * @param currentPage - Current page name for attachment file naming
+ * @returns Converted text
+ */
+const convertAttachments = (text: string, currentPage: string): string => {
+  const attachmentPageName = getAttachmentPageName(currentPage);
+
+  // Convert both #ref and &ref with unified pattern
+  // Matches: #ref(file,params...) or &ref(file,params...);
+  // The optional semicolon at the end handles both syntaxes
+  return text.replace(
+    /[#&]ref\(([^,)]+?)(?:,([^)]+?))?\);?/g,
+    (_, filename, params) =>
+      convertAttachmentReference(filename, params, attachmentPageName),
+  );
 };
