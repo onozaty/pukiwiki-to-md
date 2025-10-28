@@ -111,6 +111,7 @@ const convertLine = (line: string, pageName: string): string => {
  * Markdown: # Heading1, ## Heading2, ### Heading3
  *
  * Note: Optional space after asterisks is allowed and ignored
+ * Auto-generated anchor IDs [#xxxxx] are removed
  *
  * @param line - Line to convert
  * @returns Converted line
@@ -120,7 +121,11 @@ const convertHeading = (line: string): string => {
   if (!match || !match[1] || match[2] === undefined) return line;
 
   const level = match[1].length;
-  const text = match[2];
+  let text = match[2];
+
+  // Remove auto-generated anchor ID [#xxxxxxxx] at the end
+  text = text.replace(/\s*\[#[a-z0-9]+\]\s*$/, "").trim();
+
   return `${"#".repeat(level)} ${text}`;
 };
 

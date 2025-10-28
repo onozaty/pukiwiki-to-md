@@ -43,6 +43,48 @@ describe("convertToMarkdown", () => {
       const expected = "# タイトル\n\nコンテンツ\n\n## サブタイトル";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
+
+    it("should remove anchor ID from heading", () => {
+      const input = "*はじめに [#abc123]";
+      const expected = "# はじめに";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove anchor ID from level 2 heading", () => {
+      const input = "**セクション [#xyz789ab]";
+      const expected = "## セクション";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove anchor ID from level 3 heading", () => {
+      const input = "***サブセクション [#def456]";
+      const expected = "### サブセクション";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove anchor ID with spaces around it", () => {
+      const input = "* はじめに  [#abc123]  ";
+      const expected = "# はじめに";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle heading without anchor ID", () => {
+      const input = "*通常の見出し";
+      const expected = "# 通常の見出し";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove anchor ID from heading with special characters", () => {
+      const input = "*PukiWiki について [#qb249ac2]";
+      const expected = "# PukiWiki について";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not remove [#xxx] if it's in the middle of heading", () => {
+      const input = "*見出し [#abc] の続き";
+      const expected = "# 見出し [#abc] の続き";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
   });
 
   describe("horizontal rule conversion", () => {
@@ -727,8 +769,7 @@ describe("convertToMarkdown", () => {
     describe("footer and column width rows", () => {
       it("should include footer row (|f) as normal row", () => {
         const input = "|ヘッダ|h\n|データ|\n|フッター|f";
-        const expected =
-          "| ヘッダ |\n| --- |\n| データ |\n| フッター |";
+        const expected = "| ヘッダ |\n| --- |\n| データ |\n| フッター |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
