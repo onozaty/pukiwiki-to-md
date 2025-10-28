@@ -1,7 +1,7 @@
 {
   "name": "@onozaty/pukiwiki-to-md",
   "version": "1.0.0",
-  "description": "A content uploader for GROWI",
+  "description": "A converter from PukiWiki to Markdown",
   "type": "module",
   "bin": {
     "pukiwiki-to-md": "./dist/index.mjs"
@@ -25,8 +25,9 @@
     "url": "git+https://github.com/onozaty/pukiwiki-to-md.git"
   },
   "keywords": [
-    "growi",
-    "uploader"
+    "pukiwiki",
+    "markdown",
+    "converter"
   ],
   "author": "onozaty",
   "license": "MIT",
