@@ -130,6 +130,90 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("line break conversion", () => {
+    it("should convert #br to <br>", () => {
+      const input = "#br";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #br with trailing spaces to <br>", () => {
+      const input = "#br  ";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat #br with leading spaces as preformatted", () => {
+      const input = "  #br";
+      const expected = "```\n #br\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle multiple #br on separate lines", () => {
+      const input = "テキスト1\n#br\n#br\nテキスト2";
+      const expected = "テキスト1\n<br>\n<br>\nテキスト2";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
+  describe("system directive removal", () => {
+    it("should remove #author directive", () => {
+      const input =
+        '#author("2025-03-14T11:18:07+09:00","default:user","User Name")';
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove #freeze directive", () => {
+      const input = "#freeze";
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove #norelated directive", () => {
+      const input = "#norelated";
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove #nofollow directive", () => {
+      const input = "#nofollow";
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove #norightbar directive", () => {
+      const input = "#norightbar";
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove system directives with trailing spaces", () => {
+      const input = "#freeze  ";
+      const expected = "";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat system directives with leading spaces as preformatted", () => {
+      const input = "  #freeze";
+      const expected = "```\n #freeze\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove multiple system directives in content", () => {
+      const input = "#freeze\nテキスト\n#norelated";
+      const expected = "テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove #author and keep other content", () => {
+      const input =
+        '#author("2025-03-14T11:18:07+09:00","default:user","User")\n*見出し\nテキスト';
+      const expected = "# 見出し\nテキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("list conversion", () => {
     describe("unordered list", () => {
       it("should convert level 1 unordered list", () => {
