@@ -100,8 +100,8 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
-    it("should handle horizontal rule with spaces", () => {
-      const input = "   ----   ";
+    it("should handle horizontal rule with trailing spaces", () => {
+      const input = "----   ";
       const expected = "---";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
@@ -112,8 +112,8 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
-    it("should convert #hr with spaces", () => {
-      const input = "  #hr  ";
+    it("should convert #hr with trailing spaces", () => {
+      const input = "#hr  ";
       const expected = "---";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
@@ -849,6 +849,93 @@ describe("convertToMarkdown", () => {
           "| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| A | B | C |\n| D | E | F |\n| G | H | I |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
+    });
+  });
+
+  describe("preformatted text conversion", () => {
+    it("should convert single preformatted line to fenced code block", () => {
+      const input = " 整形済みテキスト";
+      const expected = "```\n整形済みテキスト\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert multiple preformatted lines to single code block", () => {
+      const input = " 行1\n 行2\n 行3";
+      const expected = "```\n行1\n行2\n行3\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle preformatted text with normal text before and after", () => {
+      const input = "通常テキスト\n\n 整形1\n 整形2\n\n通常テキスト2";
+      const expected =
+        "通常テキスト\n\n```\n整形1\n整形2\n```\n\n通常テキスト2";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle preformatted text starting with tab", () => {
+      const input = "\t整形済みテキスト";
+      const expected = "```\n整形済みテキスト\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not treat whitespace-only lines as preformatted", () => {
+      const input = "   ";
+      const expected = "   ";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove only first leading space preserving relative indent", () => {
+      const input = "  コード行1\n   コード行2";
+      const expected = "```\n コード行1\n  コード行2\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle multiple preformatted blocks", () => {
+      const input = " ブロック1\n\n通常\n\n ブロック2";
+      const expected = "```\nブロック1\n```\n\n通常\n\n```\nブロック2\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not process PukiWiki syntax in preformatted text", () => {
+      const input = " *見出し\n ''強調''";
+      const expected = "```\n*見出し\n''強調''\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle preformatted text followed by table", () => {
+      const input = " コード\n|セル|h";
+      const expected = "```\nコード\n```\n| セル |\n| --- |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle table followed by preformatted text", () => {
+      const input = "|セル|h\n コード";
+      const expected = "| セル |\n| --- |\n```\nコード\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat horizontal rule with leading spaces as preformatted", () => {
+      const input = "   ----";
+      const expected = "```\n  ----\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat #hr with leading spaces as preformatted", () => {
+      const input = "  #hr";
+      const expected = "```\n #hr\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should preserve internal and trailing whitespace", () => {
+      const input = "  hello   world  ";
+      const expected = "```\n hello   world  \n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should preserve relative indentation by removing only first space", () => {
+      const input = "  function test() {\n    return 42;\n  }";
+      const expected = "```\n function test() {\n   return 42;\n }\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
   });
 

@@ -38,16 +38,50 @@ export const convertToMarkdown = (
   const convertedLines: string[] = [];
   let tableBuffer: TableRow[] = [];
   let inTable = false;
+  let preformattedBuffer: string[] = [];
+  let inPreformatted = false;
 
   for (const line of lines) {
-    const tableRow = parseTableRow(line);
+    const isPreformatted = isPreformattedLine(line);
+    const tableRow = !isPreformatted ? parseTableRow(line) : null;
 
-    if (tableRow) {
-      // Table row detected - add to buffer
+    if (isPreformatted) {
+      // Preformatted text line detected
+      if (inTable) {
+        // End of table - convert and output buffered table
+        const markdownTable = generateMarkdownTable(tableBuffer);
+        convertedLines.push(...markdownTable);
+        tableBuffer = [];
+        inTable = false;
+      }
+
+      // Remove only the first leading space/tab and add to preformatted buffer
+      // This preserves relative indentation within the preformatted block
+      preformattedBuffer.push(line.replace(/^[ \t]/, ""));
+      inPreformatted = true;
+    } else if (tableRow) {
+      // Table row detected
+      if (inPreformatted) {
+        // End of preformatted block - convert and output
+        const codeBlock = generatePreformattedBlock(preformattedBuffer);
+        convertedLines.push(...codeBlock);
+        preformattedBuffer = [];
+        inPreformatted = false;
+      }
+
+      // Add to table buffer
       tableBuffer.push(tableRow);
       inTable = true;
     } else {
-      // Non-table row detected
+      // Non-table, non-preformatted row detected
+      if (inPreformatted) {
+        // End of preformatted block - convert and output
+        const codeBlock = generatePreformattedBlock(preformattedBuffer);
+        convertedLines.push(...codeBlock);
+        preformattedBuffer = [];
+        inPreformatted = false;
+      }
+
       if (inTable) {
         // End of table - convert and output buffered table
         const markdownTable = generateMarkdownTable(tableBuffer);
@@ -61,7 +95,12 @@ export const convertToMarkdown = (
     }
   }
 
-  // Handle remaining table at end of content
+  // Handle remaining blocks at end of content
+  if (inPreformatted && preformattedBuffer.length > 0) {
+    const codeBlock = generatePreformattedBlock(preformattedBuffer);
+    convertedLines.push(...codeBlock);
+  }
+
   if (inTable && tableBuffer.length > 0) {
     const markdownTable = generateMarkdownTable(tableBuffer);
     convertedLines.push(...markdownTable);
@@ -181,7 +220,7 @@ const convertList = (line: string): string => {
  * @returns Converted line
  */
 const convertHorizontalRule = (line: string): string => {
-  const trimmed = line.trim();
+  const trimmed = line.trimEnd();
 
   // Match ---- (4 or more hyphens)
   if (/^-{4,}$/.test(trimmed)) {
@@ -557,6 +596,30 @@ const parseTableCell = (cellText: string): TableCell => {
     result.align = align;
   }
   return result;
+};
+
+/**
+ * Check if a line is preformatted text (starts with space or tab)
+ *
+ * @param line - Line to check
+ * @returns True if line is preformatted text
+ */
+const isPreformattedLine = (line: string): boolean => {
+  // Preformatted line must start with space or tab followed by non-whitespace
+  // Empty lines or lines with only whitespace are not preformatted
+  return /^[ \t]+\S/.test(line);
+};
+
+/**
+ * Generate fenced code block from preformatted text lines
+ *
+ * @param lines - Preformatted text lines (leading whitespace already removed)
+ * @returns Array of Markdown lines forming a fenced code block
+ */
+const generatePreformattedBlock = (lines: string[]): string[] => {
+  if (lines.length === 0) return [];
+
+  return ["```", ...lines, "```"];
 };
 
 /**
