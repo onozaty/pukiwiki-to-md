@@ -603,6 +603,38 @@ const determineColumnAligns = (
 };
 
 /**
+ * Generate HTML table from table rows
+ *
+ * @param rows - Table rows
+ * @returns Array of HTML lines
+ */
+const generateHtmlTable = (rows: TableRow[]): string[] => {
+  if (rows.length === 0) return [];
+
+  const result: string[] = [];
+  result.push("<table>");
+
+  for (const row of rows) {
+    // Skip c (column width) rows
+    if (row.type === "c") continue;
+
+    result.push("<tr>");
+    for (const cell of row.cells) {
+      let content = cell.content;
+      // Convert ~ header cells to bold with <strong> tag
+      if (cell.isHeader) {
+        content = `<strong>${content}</strong>`;
+      }
+      result.push(`<td>${content}</td>`);
+    }
+    result.push("</tr>");
+  }
+
+  result.push("</table>");
+  return result;
+};
+
+/**
  * Generate Markdown table from table rows
  *
  * @param rows - Table rows
@@ -610,6 +642,14 @@ const determineColumnAligns = (
  */
 const generateMarkdownTable = (rows: TableRow[]): string[] => {
   if (rows.length === 0) return [];
+
+  // Check if table has |h header row
+  const hasHeaderRow = rows.some((row) => row.type === "h");
+
+  // If no |h header, use HTML table format
+  if (!hasHeaderRow) {
+    return generateHtmlTable(rows);
+  }
 
   const result: string[] = [];
   const firstRow = rows[0];
@@ -624,8 +664,8 @@ const generateMarkdownTable = (rows: TableRow[]): string[] => {
     const row = rows[i];
     if (!row) continue;
 
-    // Skip c (column width) and f (footer) rows
-    if (row.type === "c" || row.type === "f") continue;
+    // Skip c (column width) rows
+    if (row.type === "c") continue;
 
     // Generate cell contents
     const cells = row.cells.map((cell) => {
