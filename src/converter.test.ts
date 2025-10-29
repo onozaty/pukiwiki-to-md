@@ -195,6 +195,107 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("line-head escape", () => {
+    it("should escape Markdown special character *", () => {
+      const input = "~*見出し";
+      const expected = "\\*見出し";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should escape Markdown special character -", () => {
+      const input = "~-リスト";
+      const expected = "\\-リスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should escape Markdown special character >", () => {
+      const input = "~>引用";
+      const expected = "\\>引用";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should escape Markdown special character #", () => {
+      const input = "~#見出し";
+      const expected = "\\#見出し";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove ~ for PukiWiki-specific syntax", () => {
+      const input = "~&ref(image.png);";
+      // After removing ~, &ref will be converted to image syntax
+      const expected = "![](テスト_attachment_image.png)";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove ~ for PukiWiki comment", () => {
+      const input = "~//コメント";
+      const expected = "//コメント";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should keep ~ alone on a line", () => {
+      const input = "~";
+      const expected = "~";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat ~ with leading spaces as preformatted", () => {
+      const input = "  ~*not escaped";
+      const expected = "```\n ~*not escaped\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should escape with other content", () => {
+      const input = "~*見出し\nテキスト";
+      const expected = "\\*見出し\nテキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
+  describe("line-end tilde", () => {
+    it("should convert line-end ~ to <br>", () => {
+      const input = "テキスト1~";
+      const expected = "テキスト1<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert multiple line-end ~ on separate lines", () => {
+      const input = "テキスト1~\nテキスト2~";
+      const expected = "テキスト1<br>\nテキスト2<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should combine with other inline formats", () => {
+      const input = "''太字''のテキスト~";
+      const expected = "**太字**のテキスト<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert ~ with trailing spaces", () => {
+      const input = "テキスト~  ";
+      const expected = "テキスト~  ";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert ~ in the middle of line", () => {
+      const input = "テ~キスト";
+      const expected = "テ~キスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle empty line with ~", () => {
+      const input = "~";
+      const expected = "~";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle both line-head and line-end escape", () => {
+      const input = "~*見出し~";
+      const expected = "\\*見出し<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("system directive removal", () => {
     it("should remove #author directive", () => {
       const input =

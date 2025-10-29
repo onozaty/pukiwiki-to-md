@@ -106,12 +106,22 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `'''italic'''` | `*italic*` |
 | `%%strikethrough%%` | `~~strikethrough~~` |
 | `&br;` | `<br>` |
+| `text~` | `text<br>` |
 
 ### Comments
 
 | PukiWiki | Markdown |
 |----------|----------|
 | `//comment` | `<!-- comment -->` |
+
+### Escape
+
+| PukiWiki | Markdown |
+|----------|----------|
+| `~*text` | `\*text` |
+| `~-text` | `\-text` |
+
+Escapes Markdown special characters (`*`, `-`, `+`, `>`, `#`, `|`) at line start. For non-Markdown characters, the `~` is simply removed.
 
 ### Links
 

@@ -127,6 +127,7 @@ const convertLine = (line: string, pageName: string): string => {
   const blockConverters = [
     convertSystemDirective,
     convertComment,
+    convertLineHeadEscape,
     convertHorizontalRule,
     convertLineBreak,
     convertHeading,
@@ -274,6 +275,41 @@ const convertComment = (line: string): string => {
 };
 
 /**
+ * Convert line-head escape from PukiWiki to Markdown
+ *
+ * PukiWiki: ~*text, ~-text, etc.
+ * Markdown: \*text, \-text, etc.
+ *
+ * Escapes Markdown special characters at line start. For non-Markdown
+ * special characters (like PukiWiki-specific syntax), just removes the ~.
+ *
+ * @param line - Line to convert
+ * @returns Converted line with escaped characters or ~ removed
+ */
+const convertLineHeadEscape = (line: string): string => {
+  // Don't process empty ~ or ~ with only whitespace after it
+  const trimmed = line.trimEnd();
+  if (trimmed === "~") return line;
+
+  if (!line.startsWith("~")) return line;
+
+  const restOfLine = line.substring(1);
+  if (restOfLine.length === 0) return line;
+
+  const firstChar = restOfLine.charAt(0);
+  // Markdown characters that need escaping at line start
+  const markdownSpecialChars = ["*", "-", "+", ">", "#", "|"];
+
+  if (markdownSpecialChars.includes(firstChar)) {
+    // Escape with backslash for Markdown special characters
+    return `\\${restOfLine}`;
+  } else {
+    // Just remove ~ for non-Markdown characters (e.g., PukiWiki syntax)
+    return restOfLine;
+  }
+};
+
+/**
  * Convert horizontal rule from PukiWiki to Markdown
  *
  * PukiWiki: ---- (4 or more hyphens) or #hr
@@ -342,8 +378,8 @@ const convertQuote = (line: string): string => {
 /**
  * Convert inline text formatting from PukiWiki to Markdown
  *
- * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, &br;
- * Markdown: **bold**, *italic*, ~~strikethrough~~, <br>
+ * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, &br;, text~
+ * Markdown: **bold**, *italic*, ~~strikethrough~~, <br>, text<br>
  *
  * @param text - Text to convert
  * @returns Converted text
@@ -362,6 +398,10 @@ const convertInlineFormat = (text: string): string => {
 
   // Convert line break: &br; → <br>
   converted = converted.replace(/&br;/g, "<br>");
+
+  // Convert line-end tilde: text~ → text<br>
+  // Only match ~ that is not preceded by ~ (to avoid ~~)
+  converted = converted.replace(/([^~])~$/g, "$1<br>");
 
   return converted;
 };
