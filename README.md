@@ -107,6 +107,12 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `%%strikethrough%%` | `~~strikethrough~~` |
 | `&br;` | `<br>` |
 
+### Comments
+
+| PukiWiki | Markdown |
+|----------|----------|
+| `//comment` | `<!-- comment -->` |
+
 ### Links
 
 | PukiWiki | Markdown |

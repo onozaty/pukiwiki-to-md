@@ -156,6 +156,45 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("comment conversion", () => {
+    it("should convert // comment to HTML comment", () => {
+      const input = "//これはコメントです";
+      const expected = "<!-- これはコメントです -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert // with leading space", () => {
+      const input = "// コメント";
+      const expected = "<!-- コメント -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should preserve comment with other content", () => {
+      const input = "//コメント\n*見出し\nテキスト";
+      const expected = "<!-- コメント -->\n# 見出し\nテキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle empty comment", () => {
+      const input = "//";
+      const expected = "<!--  -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should treat // with leading spaces as preformatted", () => {
+      const input = "  //not a comment";
+      const expected = "```\n //not a comment\n```";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle multiple comments in sequence", () => {
+      const input = "//コメント1\n//コメント2\n//コメント3";
+      const expected =
+        "<!-- コメント1 -->\n<!-- コメント2 -->\n<!-- コメント3 -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("system directive removal", () => {
     it("should remove #author directive", () => {
       const input =

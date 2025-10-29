@@ -126,6 +126,7 @@ const convertLine = (line: string, pageName: string): string => {
   // Try each conversion in order, stop at first match
   const blockConverters = [
     convertSystemDirective,
+    convertComment,
     convertHorizontalRule,
     convertLineBreak,
     convertHeading,
@@ -246,6 +247,27 @@ const convertSystemDirective = (line: string): string => {
     trimmed === "#norightbar"
   ) {
     return "";
+  }
+
+  return line;
+};
+
+/**
+ * Convert comment from PukiWiki to Markdown
+ *
+ * PukiWiki: //comment
+ * Markdown: <!-- comment -->
+ *
+ * @param line - Line to convert
+ * @returns Converted line with HTML comment
+ */
+const convertComment = (line: string): string => {
+  const trimmed = line.trimEnd();
+
+  // Match comment line starting with //
+  if (trimmed.startsWith("//")) {
+    const commentContent = trimmed.substring(2).trimStart();
+    return `<!-- ${commentContent} -->`;
   }
 
   return line;
