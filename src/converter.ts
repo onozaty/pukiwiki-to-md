@@ -53,7 +53,7 @@ export const convertToMarkdown = (
       // Preformatted text line detected
       if (inTable) {
         // End of table - convert and output buffered table
-        const markdownTable = generateMarkdownTable(tableBuffer);
+        const markdownTable = generateMarkdownTable(tableBuffer, pageName);
         convertedLines.push(...markdownTable);
         tableBuffer = [];
         inTable = false;
@@ -88,7 +88,7 @@ export const convertToMarkdown = (
 
       if (inTable) {
         // End of table - convert and output buffered table
-        const markdownTable = generateMarkdownTable(tableBuffer);
+        const markdownTable = generateMarkdownTable(tableBuffer, pageName);
         convertedLines.push(...markdownTable);
         tableBuffer = [];
         inTable = false;
@@ -118,7 +118,7 @@ export const convertToMarkdown = (
   }
 
   if (inTable && tableBuffer.length > 0) {
-    const markdownTable = generateMarkdownTable(tableBuffer);
+    const markdownTable = generateMarkdownTable(tableBuffer, pageName);
     convertedLines.push(...markdownTable);
   }
 
@@ -1003,64 +1003,20 @@ const determineColumnAligns = (
 };
 
 /**
- * Generate HTML table from table rows
- *
- * @param rows - Table rows
- * @returns Array of HTML lines
- */
-const generateHtmlTable = (rows: TableRow[]): string[] => {
-  if (rows.length === 0) return [];
-
-  const result: string[] = [];
-  result.push("<table>");
-
-  for (const row of rows) {
-    // Skip c (column width) rows
-    if (row.type === "c") continue;
-
-    result.push("<tr>");
-    for (const cell of row.cells) {
-      let content = cell.content;
-
-      // Apply bold formatting (both ~ and BOLD:)
-      if (cell.isHeader || cell.isBold) {
-        content = `<strong>${content}</strong>`;
-      }
-
-      // Build style attributes
-      const styles: string[] = [];
-      if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
-      if (cell.color) styles.push(`color: ${cell.color}`);
-      if (cell.bgColor) styles.push(`background-color: ${cell.bgColor}`);
-
-      const styleAttr =
-        styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
-
-      result.push(`<td${styleAttr}>${content}</td>`);
-    }
-    result.push("</tr>");
-  }
-
-  result.push("</table>");
-  return result;
-};
-
-/**
  * Generate Markdown table from table rows
  *
  * @param rows - Table rows
+ * @param pageName - Page name (used for link conversion)
  * @returns Array of Markdown lines
  */
-const generateMarkdownTable = (rows: TableRow[]): string[] => {
+const generateMarkdownTable = (
+  rows: TableRow[],
+  pageName: string,
+): string[] => {
   if (rows.length === 0) return [];
 
   // Check if table has |h header row
   const hasHeaderRow = rows.some((row) => row.type === "h");
-
-  // If no |h header, use HTML table format
-  if (!hasHeaderRow) {
-    return generateHtmlTable(rows);
-  }
 
   const result: string[] = [];
   const firstRow = rows[0];
@@ -1070,6 +1026,20 @@ const generateMarkdownTable = (rows: TableRow[]): string[] => {
 
   // Determine column alignments
   const columnAligns = determineColumnAligns(rows, columnCount);
+
+  // If no |h header, add empty header row
+  if (!hasHeaderRow) {
+    const emptyHeaders = Array(columnCount).fill(" ");
+    result.push(`| ${emptyHeaders.join(" | ")} |`);
+
+    // Add separator row
+    const separator = columnAligns.map((align) => {
+      if (align === "center") return ":---:";
+      if (align === "right") return "---:";
+      return "---";
+    });
+    result.push(`| ${separator.join(" | ")} |`);
+  }
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -1081,6 +1051,11 @@ const generateMarkdownTable = (rows: TableRow[]): string[] => {
     // Generate cell contents
     const cells = row.cells.map((cell) => {
       let content = cell.content;
+
+      // Apply inline conversions (links, attachments, formatting)
+      content = convertInlineFormat(content);
+      content = convertLinks(content, pageName);
+      content = convertAttachments(content, pageName);
 
       // Apply bold formatting (both ~ and BOLD:)
       if (cell.isHeader || cell.isBold) {

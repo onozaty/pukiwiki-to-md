@@ -1076,21 +1076,19 @@ describe("convertToMarkdown", () => {
       it("should convert simple 2x2 table", () => {
         const input = "|セル1|セル2|\n|セル3|セル4|";
         const expected =
-          "<table>\n<tr>\n<td>セル1</td>\n<td>セル2</td>\n</tr>\n<tr>\n<td>セル3</td>\n<td>セル4</td>\n</tr>\n</table>";
+          "|   |   |\n| --- | --- |\n| セル1 | セル2 |\n| セル3 | セル4 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should handle empty cells", () => {
         const input = "|セル1||\n||セル4|";
-        const expected =
-          "<table>\n<tr>\n<td>セル1</td>\n<td></td>\n</tr>\n<tr>\n<td></td>\n<td>セル4</td>\n</tr>\n</table>";
+        const expected = "|   |   |\n| --- | --- |\n| セル1 |  |\n|  | セル4 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should handle cells with spaces", () => {
         const input = "| セル 1 | セル 2 |";
-        const expected =
-          "<table>\n<tr>\n<td>セル 1</td>\n<td>セル 2</td>\n</tr>\n</table>";
+        const expected = "|   |   |\n| --- | --- |\n| セル 1 | セル 2 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
@@ -1149,15 +1147,14 @@ describe("convertToMarkdown", () => {
     describe("header cells (~)", () => {
       it("should convert ~ header cell to bold", () => {
         const input = "|~見出し|通常|";
-        const expected =
-          "<table>\n<tr>\n<td><strong>見出し</strong></td>\n<td>通常</td>\n</tr>\n</table>";
+        const expected = "|   |   |\n| --- | --- |\n| **見出し** | 通常 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should handle multiple ~ header cells", () => {
         const input = "|~列1|~列2|~列3|";
         const expected =
-          "<table>\n<tr>\n<td><strong>列1</strong></td>\n<td><strong>列2</strong></td>\n<td><strong>列3</strong></td>\n</tr>\n</table>";
+          "|   |   |   |\n| --- | --- | --- |\n| **列1** | **列2** | **列3** |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1191,15 +1188,13 @@ describe("convertToMarkdown", () => {
 
       it("should include footer row in HTML table", () => {
         const input = "|データ|\n|フッター|f";
-        const expected =
-          "<table>\n<tr>\n<td>データ</td>\n</tr>\n<tr>\n<td>フッター</td>\n</tr>\n</table>";
+        const expected = "|   |\n| --- |\n| データ |\n| フッター |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should skip column width row in HTML table", () => {
         const input = "|100|200|c\n|データ1|データ2|";
-        const expected =
-          "<table>\n<tr>\n<td>データ1</td>\n<td>データ2</td>\n</tr>\n</table>";
+        const expected = "|   |   |\n| --- | --- |\n| データ1 | データ2 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
@@ -1208,14 +1203,14 @@ describe("convertToMarkdown", () => {
       it("should handle multiple tables separated by text", () => {
         const input = "|表1A|表1B|\n\nテキスト\n\n|表2A|表2B|";
         const expected =
-          "<table>\n<tr>\n<td>表1A</td>\n<td>表1B</td>\n</tr>\n</table>\n\nテキスト\n\n<table>\n<tr>\n<td>表2A</td>\n<td>表2B</td>\n</tr>\n</table>";
+          "|   |   |\n| --- | --- |\n| 表1A | 表1B |\n\nテキスト\n\n|   |   |\n| --- | --- |\n| 表2A | 表2B |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should handle tables with headings between them", () => {
         const input = "|データ1|\n\n*見出し\n\n|データ2|";
         const expected =
-          "<table>\n<tr>\n<td>データ1</td>\n</tr>\n</table>\n\n# 見出し\n\n<table>\n<tr>\n<td>データ2</td>\n</tr>\n</table>";
+          "|   |\n| --- |\n| データ1 |\n\n# 見出し\n\n|   |\n| --- |\n| データ2 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
@@ -1230,15 +1225,13 @@ describe("convertToMarkdown", () => {
 
       it("should handle table before quote", () => {
         const input = "|データ|\n>引用文";
-        const expected =
-          "<table>\n<tr>\n<td>データ</td>\n</tr>\n</table>\n> 引用文";
+        const expected = "|   |\n| --- |\n| データ |\n> 引用文";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should handle table with list after", () => {
         const input = "|データ|\n-リスト項目";
-        const expected =
-          "<table>\n<tr>\n<td>データ</td>\n</tr>\n</table>\n- リスト項目";
+        const expected = "|   |\n| --- |\n| データ |\n- リスト項目";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
@@ -1246,8 +1239,7 @@ describe("convertToMarkdown", () => {
     describe("table cell formatting", () => {
       it("should convert BOLD: in HTML table", () => {
         const input = "|BOLD:太字|通常|";
-        const expected =
-          "<table>\n<tr>\n<td><strong>太字</strong></td>\n<td>通常</td>\n</tr>\n</table>";
+        const expected = "|   |   |\n| --- | --- |\n| **太字** | 通常 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1260,7 +1252,7 @@ describe("convertToMarkdown", () => {
       it("should convert SIZE in HTML table", () => {
         const input = "|SIZE(20):大きい|通常|";
         const expected =
-          '<table>\n<tr>\n<td style="font-size: 20px">大きい</td>\n<td>通常</td>\n</tr>\n</table>';
+          '|   |   |\n| --- | --- |\n| <span style="font-size: 20px">大きい</span> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1274,7 +1266,7 @@ describe("convertToMarkdown", () => {
       it("should convert COLOR in HTML table", () => {
         const input = "|COLOR(red):赤|通常|";
         const expected =
-          '<table>\n<tr>\n<td style="color: red">赤</td>\n<td>通常</td>\n</tr>\n</table>';
+          '|   |   |\n| --- | --- |\n| <span style="color: red">赤</span> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1288,21 +1280,21 @@ describe("convertToMarkdown", () => {
       it("should convert BGCOLOR in HTML table", () => {
         const input = "|BGCOLOR(yellow):黄背景|通常|";
         const expected =
-          '<table>\n<tr>\n<td style="background-color: yellow">黄背景</td>\n<td>通常</td>\n</tr>\n</table>';
+          '|   |   |\n| --- | --- |\n| <span style="background-color: yellow">黄背景</span> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should combine multiple styles", () => {
         const input = "|SIZE(20):COLOR(red):大きくて赤|通常|";
         const expected =
-          '<table>\n<tr>\n<td style="font-size: 20px; color: red">大きくて赤</td>\n<td>通常</td>\n</tr>\n</table>';
+          '|   |   |\n| --- | --- |\n| <span style="font-size: 20px; color: red">大きくて赤</span> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
       it("should combine all styles in HTML table", () => {
         const input = "|BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|";
         const expected =
-          '<table>\n<tr>\n<td style="font-size: 20px; color: red; background-color: yellow"><strong>全部</strong></td>\n<td>通常</td>\n</tr>\n</table>';
+          '|   |   |\n| --- | --- |\n| <span style="font-size: 20px; color: red; background-color: yellow">**全部**</span> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 

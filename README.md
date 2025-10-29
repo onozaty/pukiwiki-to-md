@@ -137,9 +137,9 @@ Escapes Markdown special characters (`*`, `-`, `+`, `>`, `#`, `|`) at line start
 
 ### Tables
 
-PukiWiki tables are converted to Markdown or HTML format depending on whether they have a header marker.
+All PukiWiki tables are converted to Markdown table format. Tables without a header marker (`|h`) automatically get an empty header row.
 
-**Markdown Tables** (with `|h` header marker):
+**With Header Marker** (`|h`):
 
 **Input:**
 ```
@@ -148,26 +148,44 @@ PukiWiki tables are converted to Markdown or HTML format depending on whether th
 ```
 
 **Output:**
-```
+```markdown
 | Header1 | Header2 |
 | --- | --- |
 | Data1 | Data2 |
 ```
 
-**HTML Tables** (without `|h` header marker):
+**Without Header Marker** (empty header row added automatically):
 
 **Input:**
 ```
-|~Date|2025-01-01|
-|~Location|Online|
+|Data1|Data2|
+|Data3|Data4|
 ```
 
 **Output:**
-```html
-<table>
-<tr><td><strong>Date</strong></td><td>2025-01-01</td></tr>
-<tr><td><strong>Location</strong></td><td>Online</td></tr>
-</table>
+```markdown
+|   |   |
+| --- | --- |
+| Data1 | Data2 |
+| Data3 | Data4 |
+```
+
+**Tables with PukiWiki Syntax in Cells:**
+
+PukiWiki syntax (links, formatting, etc.) within table cells is properly converted:
+
+**Input:**
+```
+|[[TopPage]]|''Bold''|
+|[[Help]]|Normal|
+```
+
+**Output:**
+```markdown
+|   |   |
+| --- | --- |
+| [TopPage](TopPage.md) | **Bold** |
+| [Help](Help.md) | Normal |
 ```
 
 **Table Cell Formatting:**
@@ -176,10 +194,11 @@ Cells can be formatted with the following prefixes:
 
 | PukiWiki | Description | Output |
 |----------|-------------|--------|
-| `BOLD:text` | Bold text | `**text**` or `<strong>text</strong>` |
+| `BOLD:text` | Bold text | `**text**` |
 | `SIZE(20):text` | Font size (px) | `<span style="font-size: 20px">text</span>` |
 | `COLOR(red):text` | Text color | `<span style="color: red">text</span>` |
 | `BGCOLOR(yellow):text` | Background color | `<span style="background-color: yellow">text</span>` |
+| `~text` | Bold (header cell) | `**text**` |
 
 **Example:**
 ```
