@@ -1129,6 +1129,90 @@ describe("convertToMarkdown", () => {
       });
     });
 
+    describe("table cell formatting", () => {
+      it("should convert BOLD: in HTML table", () => {
+        const input = "|BOLD:太字|通常|";
+        const expected =
+          "<table>\n<tr>\n<td><strong>太字</strong></td>\n<td>通常</td>\n</tr>\n</table>";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert BOLD: in Markdown table", () => {
+        const input = "|BOLD:太字|通常|h";
+        const expected = "| **太字** | 通常 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert SIZE in HTML table", () => {
+        const input = "|SIZE(20):大きい|通常|";
+        const expected =
+          '<table>\n<tr>\n<td style="font-size: 20px">大きい</td>\n<td>通常</td>\n</tr>\n</table>';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert SIZE in Markdown table", () => {
+        const input = "|SIZE(20):大きい|通常|h";
+        const expected =
+          '| <span style="font-size: 20px">大きい</span> | 通常 |\n| --- | --- |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert COLOR in HTML table", () => {
+        const input = "|COLOR(red):赤|通常|";
+        const expected =
+          '<table>\n<tr>\n<td style="color: red">赤</td>\n<td>通常</td>\n</tr>\n</table>';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert COLOR with hex code in Markdown table", () => {
+        const input = "|COLOR(#FF0000):赤|通常|h";
+        const expected =
+          '| <span style="color: #FF0000">赤</span> | 通常 |\n| --- | --- |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert BGCOLOR in HTML table", () => {
+        const input = "|BGCOLOR(yellow):黄背景|通常|";
+        const expected =
+          '<table>\n<tr>\n<td style="background-color: yellow">黄背景</td>\n<td>通常</td>\n</tr>\n</table>';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine multiple styles", () => {
+        const input = "|SIZE(20):COLOR(red):大きくて赤|通常|";
+        const expected =
+          '<table>\n<tr>\n<td style="font-size: 20px; color: red">大きくて赤</td>\n<td>通常</td>\n</tr>\n</table>';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine all styles in HTML table", () => {
+        const input = "|BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|";
+        const expected =
+          '<table>\n<tr>\n<td style="font-size: 20px; color: red; background-color: yellow"><strong>全部</strong></td>\n<td>通常</td>\n</tr>\n</table>';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine with alignment in Markdown table", () => {
+        const input = "|LEFT:BOLD:名前|RIGHT:SIZE(20):大きい|h";
+        const expected =
+          '| **名前** | <span style="font-size: 20px">大きい</span> |\n| --- | ---: |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle BOLD: with ~ header cell", () => {
+        const input = "|BOLD:~太字|通常|h";
+        const expected = "| **太字** | 通常 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle multiple formatted cells in one row", () => {
+        const input = "|BOLD:太字|COLOR(red):赤|SIZE(20):大きい|h";
+        const expected =
+          '| **太字** | <span style="color: red">赤</span> | <span style="font-size: 20px">大きい</span> |\n| --- | --- | --- |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
     describe("complex tables", () => {
       it("should handle table with all features", () => {
         const input =

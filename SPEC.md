@@ -586,16 +586,100 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 - カラム幅設定行は出力時にスキップされます（Markdown/HTMLともに表現不可）
 - 例: `|100|200|c` → 出力されない
 
-#### 5.9.6 無視される記法
+#### 5.9.6 セル装飾
+
+テーブルセル内で以下の装飾プレフィックスを使用できます。これらはHTMLのstyle属性または対応するタグに変換されます。
+
+**対応する装飾:**
+
+| PukiWiki記法 | 説明 | Markdown形式の出力 | HTML形式の出力 |
+|-------------|------|-------------------|---------------|
+| `BOLD:テキスト` | 太字 | `**テキスト**` | `<strong>テキスト</strong>` |
+| `SIZE(数値):テキスト` | フォントサイズ（px） | `<span style="font-size: 数値px">テキスト</span>` | `<td style="font-size: 数値px">テキスト</td>` |
+| `COLOR(色):テキスト` | 文字色 | `<span style="color: 色">テキスト</span>` | `<td style="color: 色">テキスト</td>` |
+| `BGCOLOR(色):テキスト` | 背景色 | `<span style="background-color: 色">テキスト</span>` | `<td style="background-color: 色">テキスト</td>` |
+
+**処理順序:**
+
+セル内のプレフィックスは以下の順序で処理されます：
+
+1. `LEFT:` / `CENTER:` / `RIGHT:` （配置指定 - 最初に処理）
+2. `BOLD:`
+3. `SIZE(数値):`
+4. `COLOR(色):`
+5. `BGCOLOR(色):`
+6. `~` （個別ヘッダーセル）
+
+**Markdown形式の例:**
+```
+入力:
+|BOLD:太字|SIZE(20):大きい|COLOR(red):赤|h
+
+出力:
+| **太字** | <span style="font-size: 20px">大きい</span> | <span style="color: red">赤</span> |
+| --- | --- | --- |
+```
+
+**HTML形式の例:**
+```
+入力:
+|BOLD:太字|SIZE(20):大きい|COLOR(red):赤|
+
+出力:
+<table>
+<tr>
+<td><strong>太字</strong></td>
+<td style="font-size: 20px">大きい</td>
+<td style="color: red">赤</td>
+</tr>
+</table>
+```
+
+**複数の装飾を組み合わせた例（Markdown形式）:**
+```
+入力:
+|BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|h
+
+出力:
+| <span style="font-size: 20px; color: red; background-color: yellow">**全部**</span> | 通常 |
+| --- | --- |
+```
+
+**複数の装飾を組み合わせた例（HTML形式）:**
+```
+入力:
+|BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|
+
+出力:
+<table>
+<tr>
+<td style="font-size: 20px; color: red; background-color: yellow"><strong>全部</strong></td>
+<td>通常</td>
+</tr>
+</table>
+```
+
+**配置指定との組み合わせ:**
+```
+入力:
+|LEFT:BOLD:名前|RIGHT:SIZE(20):大きい|h
+
+出力:
+| **名前** | <span style="font-size: 20px">大きい</span> |
+| --- | ---: |
+```
+
+**注意事項:**
+- 色指定は CSS の色名（`red`, `blue` など）や16進数カラーコード（`#FF0000` など）が使用可能です
+- `BOLD:` と個別ヘッダーセル `~` は両方とも太字化しますが、併用も可能です
+- 複数の装飾を組み合わせる場合、上記の処理順序に従って記述することを推奨します
+
+#### 5.9.7 無視される記法
 
 以下のPukiWiki記法は、Markdownで表現できないため無視されます：
 
 - `>` - 横方向セル結合（colspan）
 - `~` 単独 - 縦方向セル結合（rowspan）
-- `BGCOLOR(色):` - 背景色指定
-- `COLOR(色):` - 文字色指定
-- `SIZE(数値):` - フォントサイズ指定
-- `BOLD:` - 太字指定（既存のインライン変換`''text''`で対応可能）
 
 これらの機能が必要な場合は、HTMLタグを直接使用してください。
 

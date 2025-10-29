@@ -170,6 +170,31 @@ PukiWiki tables are converted to Markdown or HTML format depending on whether th
 </table>
 ```
 
+**Table Cell Formatting:**
+
+Cells can be formatted with the following prefixes:
+
+| PukiWiki | Description | Output |
+|----------|-------------|--------|
+| `BOLD:text` | Bold text | `**text**` or `<strong>text</strong>` |
+| `SIZE(20):text` | Font size (px) | `<span style="font-size: 20px">text</span>` |
+| `COLOR(red):text` | Text color | `<span style="color: red">text</span>` |
+| `BGCOLOR(yellow):text` | Background color | `<span style="background-color: yellow">text</span>` |
+
+**Example:**
+```
+Input:  |BOLD:Name|SIZE(20):Large|COLOR(red):Red|h
+Output: | **Name** | <span style="font-size: 20px">Large</span> | <span style="color: red">Red</span> |
+        | --- | --- | --- |
+```
+
+Multiple formatting options can be combined:
+```
+Input:  |BOLD:SIZE(20):COLOR(red):All|Normal|h
+Output: | <span style="font-size: 20px; color: red">**All**</span> | Normal |
+        | --- | --- |
+```
+
 ### Quotes
 
 | PukiWiki | Markdown |
