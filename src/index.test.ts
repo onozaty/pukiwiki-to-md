@@ -2,11 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as iconv from "iconv-lite";
-import {
-  cleanupTempDir,
-  createTempDir,
-  createTestFiles,
-} from "../test/utils";
+import { cleanupTempDir, createTempDir, createTestFiles } from "../test/utils";
 import { main } from "./index";
 
 let testDir: string;

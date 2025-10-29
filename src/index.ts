@@ -40,7 +40,7 @@ export const main = async (
     wikiPath,
     attachPath,
     outputPath,
-    encoding
+    encoding,
   );
 
   console.log();
@@ -77,16 +77,16 @@ program
           options.wiki,
           options.attach,
           options.output,
-          options.encoding
+          options.encoding,
         );
       } catch (error) {
         console.error(
           "Error:",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
         process.exit(1);
       }
-    }
+    },
   );
 
 // Only parse if not in test mode
