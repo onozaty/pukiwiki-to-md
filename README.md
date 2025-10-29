@@ -107,6 +107,9 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `%%strikethrough%%` | `~~strikethrough~~` |
 | `&br;` | `<br>` |
 | `text~` | `text<br>` |
+| `&size(20){text};` | `<span style="font-size: 20px">text</span>` |
+| `&color(red){text};` | `<span style="color: red">text</span>` |
+| `&color(red,yellow){text};` | `<span style="color: red; background-color: yellow">text</span>` |
 
 ### Comments
 

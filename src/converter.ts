@@ -378,8 +378,8 @@ const convertQuote = (line: string): string => {
 /**
  * Convert inline text formatting from PukiWiki to Markdown
  *
- * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, &br;, text~
- * Markdown: **bold**, *italic*, ~~strikethrough~~, <br>, text<br>
+ * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, &br;, text~, &size, &color
+ * Markdown: **bold**, *italic*, ~~strikethrough~~, <br>, text<br>, HTML span tags
  *
  * @param text - Text to convert
  * @returns Converted text
@@ -402,6 +402,25 @@ const convertInlineFormat = (text: string): string => {
   // Convert line-end tilde: text~ → text<br>
   // Only match ~ that is not preceded by ~ (to avoid ~~)
   converted = converted.replace(/([^~])~$/g, "$1<br>");
+
+  // Convert size: &size(20){text}; → <span style="font-size: 20px">text</span>
+  converted = converted.replace(
+    /&size\((\d+)\)\{([^}]+)\};/g,
+    (_, size, text) => `<span style="font-size: ${size}px">${text}</span>`,
+  );
+
+  // Convert color: &color(color){text}; → <span style="color: color">text</span>
+  // &color(color,bgcolor){text}; → <span style="color: color; background-color: bgcolor">text</span>
+  converted = converted.replace(
+    /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/g,
+    (_, fgColor, bgColor, text) => {
+      if (bgColor) {
+        return `<span style="color: ${fgColor}; background-color: ${bgColor}">${text}</span>`;
+      } else {
+        return `<span style="color: ${fgColor}">${text}</span>`;
+      }
+    },
+  );
 
   return converted;
 };

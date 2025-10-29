@@ -542,6 +542,77 @@ describe("convertToMarkdown", () => {
       const expected = "> **太字**の引用";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
+
+    it("should convert &size to HTML span with font-size", () => {
+      const input = "&size(20){大きい文字};";
+      const expected = '<span style="font-size: 20px">大きい文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple &size in one line", () => {
+      const input = "&size(30){大};と&size(10){小};";
+      const expected =
+        '<span style="font-size: 30px">大</span>と<span style="font-size: 10px">小</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &size with other inline formats", () => {
+      const input = "''太字''と&size(20){大きい};";
+      const expected = '**太字**と<span style="font-size: 20px">大きい</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with color name", () => {
+      const input = "&color(red){赤い文字};";
+      const expected = '<span style="color: red">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with hex color", () => {
+      const input = "&color(#FF0000){赤い文字};";
+      const expected = '<span style="color: #FF0000">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with short hex color", () => {
+      const input = "&color(#F00){赤い文字};";
+      const expected = '<span style="color: #F00">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with foreground and background colors", () => {
+      const input = "&color(blue,yellow){青い文字に黄色い背景};";
+      const expected =
+        '<span style="color: blue; background-color: yellow">青い文字に黄色い背景</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with hex colors for both fg and bg", () => {
+      const input = "&color(#00F,#FF0){青い文字に黄色い背景};";
+      const expected =
+        '<span style="color: #00F; background-color: #FF0">青い文字に黄色い背景</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple &color in one line", () => {
+      const input = "&color(red){赤};と&color(blue){青};";
+      const expected =
+        '<span style="color: red">赤</span>と<span style="color: blue">青</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color with other inline formats", () => {
+      const input = "''太字''と&color(red){赤};";
+      const expected = '**太字**と<span style="color: red">赤</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &size and &color together", () => {
+      const input = "&size(20){大きい};と&color(red){赤};";
+      const expected =
+        '<span style="font-size: 20px">大きい</span>と<span style="color: red">赤</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
   });
 
   describe("link conversion", () => {
