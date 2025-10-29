@@ -235,6 +235,27 @@ function() {
 ```
 ````
 
+### Vote Plugin
+
+The `#vote` plugin is converted to an HTML comment plus a table showing vote results:
+
+**Input:**
+```
+#vote(選択肢1[0],選択肢2[1],選択肢3[3])
+```
+
+**Output:**
+```markdown
+<!-- #vote(選択肢1[0],選択肢2[1],選択肢3[3]) -->
+| 選択肢 | 投票数 |
+| --- | ---: |
+| 選択肢1 | 0 |
+| 選択肢2 | 1 |
+| 選択肢3 | 3 |
+```
+
+Note: The voting functionality is lost, and the vote data is preserved as a static snapshot.
+
 ## Attachments
 
 ### File Processing

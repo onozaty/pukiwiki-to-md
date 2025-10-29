@@ -195,6 +195,63 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("#vote plugin conversion", () => {
+    it("should convert #vote to HTML comment + table", () => {
+      const input = "#vote(選択肢1[0],選択肢2[1],選択肢3[3])";
+      const expected =
+        "<!-- #vote(選択肢1[0],選択肢2[1],選択肢3[3]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| 選択肢1 | 0 |\n| 選択肢2 | 1 |\n| 選択肢3 | 3 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #vote with single option", () => {
+      const input = "#vote(賛成[10])";
+      const expected =
+        "<!-- #vote(賛成[10]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| 賛成 | 10 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #vote with zero votes", () => {
+      const input = "#vote(オプションA[0],オプションB[0])";
+      const expected =
+        "<!-- #vote(オプションA[0],オプションB[0]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| オプションA | 0 |\n| オプションB | 0 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle #vote with spaces in option labels", () => {
+      const input = "#vote(選択肢 A[5],選択肢 B[3])";
+      const expected =
+        "<!-- #vote(選択肢 A[5],選択肢 B[3]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| 選択肢 A | 5 |\n| 選択肢 B | 3 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #vote with many options", () => {
+      const input = "#vote(A[1],B[2],C[3],D[4],E[5])";
+      const expected =
+        "<!-- #vote(A[1],B[2],C[3],D[4],E[5]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| A | 1 |\n| B | 2 |\n| C | 3 |\n| D | 4 |\n| E | 5 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle #vote with option without count (default to 0)", () => {
+      const input = "#vote(新しい選択肢)";
+      const expected =
+        "<!-- #vote(新しい選択肢) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| 新しい選択肢 | 0 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should preserve #vote with content before and after", () => {
+      const input = "*見出し\n#vote(はい[5],いいえ[2])\n通常テキスト";
+      const expected =
+        "# 見出し\n<!-- #vote(はい[5],いいえ[2]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| はい | 5 |\n| いいえ | 2 |\n通常テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #vote-like text that is not a plugin", () => {
+      const input = "これは #vote ではありません";
+      const expected = "これは #vote ではありません";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("line-head escape", () => {
     it("should escape Markdown special character *", () => {
       const input = "~*見出し";
