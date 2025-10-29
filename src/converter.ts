@@ -94,12 +94,19 @@ export const convertToMarkdown = (
         inTable = false;
       }
 
-      // Convert and output non-table line
-      const converted = convertLine(line, pageName);
-      // Skip lines that were removed by converters (e.g., system directives)
-      // But keep original empty lines (where line === converted === "")
-      if (converted !== "" || line === "") {
-        convertedLines.push(converted);
+      // Check for #vote plugin first (returns multiple lines)
+      const voteLines = convertVote(line);
+      if (voteLines.length > 1 || voteLines[0] !== line) {
+        // #vote was converted - add all resulting lines
+        convertedLines.push(...voteLines);
+      } else {
+        // Convert and output non-table line
+        const converted = convertLine(line, pageName);
+        // Skip lines that were removed by converters (e.g., system directives)
+        // But keep original empty lines (where line === converted === "")
+        if (converted !== "" || line === "") {
+          convertedLines.push(converted);
+        }
       }
     }
   }
@@ -276,6 +283,111 @@ const convertComment = (line: string): string => {
   }
 
   return line;
+};
+
+/**
+ * Convert #vote plugin from PukiWiki to HTML comment + table
+ *
+ * PukiWiki: #vote(選択肢1[0],選択肢2[1],選択肢3[3])
+ * Markdown:
+ *   <!-- #vote(選択肢1[0],選択肢2[1],選択肢3[3]) -->
+ *   | 選択肢 | 投票数 |
+ *   | --- | ---: |
+ *   | 選択肢1 | 0 |
+ *   | 選択肢2 | 1 |
+ *   | 選択肢3 | 3 |
+ *
+ * @param line - Line to convert
+ * @returns Converted lines as array (comment + table)
+ */
+const convertVote = (line: string): string[] => {
+  const trimmed = line.trimEnd();
+
+  // Match #vote plugin
+  const voteMatch = trimmed.match(/^#vote\((.+)\)$/);
+  if (!voteMatch || !voteMatch[1]) {
+    return [line];
+  }
+
+  const result: string[] = [];
+
+  // Add original as HTML comment
+  result.push(`<!-- ${trimmed} -->`);
+
+  // Parse vote options: 選択肢1[0],選択肢2[1],選択肢3[3]
+  const optionsText = voteMatch[1];
+  const options: Array<{ label: string; count: number }> = [];
+
+  // Split by comma, but handle nested brackets carefully
+  let currentOption = "";
+  let depth = 0;
+
+  for (let i = 0; i < optionsText.length; i++) {
+    const char = optionsText[i];
+
+    if (char === "[") {
+      depth++;
+      currentOption += char;
+    } else if (char === "]") {
+      depth--;
+      currentOption += char;
+    } else if (char === "," && depth === 0) {
+      // Found a separator at depth 0
+      if (currentOption.trim()) {
+        const parsed = parseVoteOption(currentOption.trim());
+        if (parsed) options.push(parsed);
+      }
+      currentOption = "";
+    } else {
+      currentOption += char;
+    }
+  }
+
+  // Don't forget the last option
+  if (currentOption.trim()) {
+    const parsed = parseVoteOption(currentOption.trim());
+    if (parsed) options.push(parsed);
+  }
+
+  // Generate table
+  if (options.length > 0) {
+    result.push("| 選択肢 | 投票数 |");
+    result.push("| --- | ---: |");
+    for (const option of options) {
+      result.push(`| ${option.label} | ${option.count} |`);
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Parse a single vote option
+ * @param option - Vote option string like "選択肢1[0]" or "選択肢1"
+ * @returns Parsed option with label and count
+ */
+const parseVoteOption = (
+  option: string,
+): { label: string; count: number } | null => {
+  // Match pattern: label[count]
+  const match = option.match(/^(.+?)\[(\d+)\]$/);
+
+  if (match && match[1] && match[2]) {
+    return {
+      label: match[1].trim(),
+      count: parseInt(match[2], 10),
+    };
+  }
+
+  // If no count specified, default to 0
+  if (option && !option.includes("[")) {
+    return {
+      label: option.trim(),
+      count: 0,
+    };
+  }
+
+  return null;
 };
 
 /**
