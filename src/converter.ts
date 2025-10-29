@@ -13,6 +13,10 @@ interface TableCell {
   content: string;
   align?: "left" | "center" | "right";
   isHeader: boolean;
+  isBold?: boolean;
+  fontSize?: string;
+  color?: string;
+  bgColor?: string;
 }
 
 /**
@@ -720,13 +724,44 @@ const convertAttachments = (text: string, currentPage: string): string => {
 const parseTableCell = (cellText: string): TableCell => {
   let content = cellText.trim();
   let isHeader = false;
+  let isBold = false;
+  let fontSize: string | undefined = undefined;
+  let color: string | undefined = undefined;
+  let bgColor: string | undefined = undefined;
 
-  // Detect alignment specification
+  // Detect alignment specification (must be first)
   const alignMatch = content.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
   let align: "left" | "center" | "right" | undefined = undefined;
   if (alignMatch && alignMatch[1] && alignMatch[2] !== undefined) {
     align = alignMatch[1].toLowerCase() as "left" | "center" | "right";
     content = alignMatch[2];
+  }
+
+  // Detect BOLD:
+  if (content.startsWith("BOLD:")) {
+    isBold = true;
+    content = content.substring(5);
+  }
+
+  // Detect SIZE(n):
+  const sizeMatch = content.match(/^SIZE\((\d+)\):(.*)$/);
+  if (sizeMatch && sizeMatch[1] && sizeMatch[2] !== undefined) {
+    fontSize = sizeMatch[1];
+    content = sizeMatch[2];
+  }
+
+  // Detect COLOR(color):
+  const colorMatch = content.match(/^COLOR\(([^)]+)\):(.*)$/);
+  if (colorMatch && colorMatch[1] && colorMatch[2] !== undefined) {
+    color = colorMatch[1];
+    content = colorMatch[2];
+  }
+
+  // Detect BGCOLOR(color):
+  const bgColorMatch = content.match(/^BGCOLOR\(([^)]+)\):(.*)$/);
+  if (bgColorMatch && bgColorMatch[1] && bgColorMatch[2] !== undefined) {
+    bgColor = bgColorMatch[1];
+    content = bgColorMatch[2];
   }
 
   // Detect ~ header cell
@@ -736,9 +771,12 @@ const parseTableCell = (cellText: string): TableCell => {
   }
 
   const result: TableCell = { content, isHeader };
-  if (align !== undefined) {
-    result.align = align;
-  }
+  if (align !== undefined) result.align = align;
+  if (isBold) result.isBold = isBold;
+  if (fontSize) result.fontSize = fontSize;
+  if (color) result.color = color;
+  if (bgColor) result.bgColor = bgColor;
+
   return result;
 };
 
@@ -833,11 +871,22 @@ const generateHtmlTable = (rows: TableRow[]): string[] => {
     result.push("<tr>");
     for (const cell of row.cells) {
       let content = cell.content;
-      // Convert ~ header cells to bold with <strong> tag
-      if (cell.isHeader) {
+
+      // Apply bold formatting (both ~ and BOLD:)
+      if (cell.isHeader || cell.isBold) {
         content = `<strong>${content}</strong>`;
       }
-      result.push(`<td>${content}</td>`);
+
+      // Build style attributes
+      const styles: string[] = [];
+      if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
+      if (cell.color) styles.push(`color: ${cell.color}`);
+      if (cell.bgColor) styles.push(`background-color: ${cell.bgColor}`);
+
+      const styleAttr =
+        styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
+
+      result.push(`<td${styleAttr}>${content}</td>`);
     }
     result.push("</tr>");
   }
@@ -882,10 +931,22 @@ const generateMarkdownTable = (rows: TableRow[]): string[] => {
     // Generate cell contents
     const cells = row.cells.map((cell) => {
       let content = cell.content;
-      // Convert ~ header cells to bold
-      if (cell.isHeader) {
+
+      // Apply bold formatting (both ~ and BOLD:)
+      if (cell.isHeader || cell.isBold) {
         content = `**${content}**`;
       }
+
+      // Apply SIZE, COLOR, BGCOLOR with span tags
+      const styles: string[] = [];
+      if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
+      if (cell.color) styles.push(`color: ${cell.color}`);
+      if (cell.bgColor) styles.push(`background-color: ${cell.bgColor}`);
+
+      if (styles.length > 0) {
+        content = `<span style="${styles.join("; ")}">${content}</span>`;
+      }
+
       return content;
     });
 
