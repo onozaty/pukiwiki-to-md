@@ -138,6 +138,7 @@ const convertLine = (line: string, pageName: string): string => {
   const blockConverters = [
     convertSystemDirective,
     convertComment,
+    convertUnsupportedPlugin,
     convertLineHeadEscape,
     convertHorizontalRule,
     convertLineBreak,
@@ -388,6 +389,43 @@ const parseVoteOption = (
   }
 
   return null;
+};
+
+/**
+ * Convert unsupported plugins from PukiWiki to HTML comments
+ *
+ * These plugins cannot be represented in static Markdown, so they are
+ * preserved as HTML comments. This includes both dynamic/interactive
+ * plugins and layout control plugins.
+ *
+ * Supported plugins:
+ * - #contents - Table of contents (dynamic)
+ * - #comment - Comment form (dynamic)
+ * - #pcomment - Page comment form (dynamic)
+ * - #article - Article/BBS form (dynamic)
+ * - #clear - Clear float (layout control)
+ *
+ * @param line - Line to convert
+ * @returns Converted line with HTML comment, or original line if not matched
+ */
+const convertUnsupportedPlugin = (line: string): string => {
+  const trimmed = line.trimEnd();
+
+  // Match unsupported plugins that should be converted to comments
+  // Dynamic: #contents, #comment, #pcomment, #article
+  // Layout: #clear
+  // These can have optional parameters in parentheses
+  if (
+    /^#contents(\(.*\))?$/.test(trimmed) ||
+    /^#comment(\(.*\))?$/.test(trimmed) ||
+    /^#pcomment(\(.*\))?$/.test(trimmed) ||
+    /^#article(\(.*\))?$/.test(trimmed) ||
+    /^#clear(\(.*\))?$/.test(trimmed)
+  ) {
+    return `<!-- ${trimmed} -->`;
+  }
+
+  return line;
 };
 
 /**

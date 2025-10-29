@@ -256,6 +256,32 @@ The `#vote` plugin is converted to an HTML comment plus a table showing vote res
 
 Note: The voting functionality is lost, and the vote data is preserved as a static snapshot.
 
+### Unsupported Plugins
+
+The following plugins cannot be represented in Markdown and are converted to HTML comments:
+
+| PukiWiki | Description | Type | Output |
+|----------|-------------|------|--------|
+| `#contents` | Table of contents | Dynamic | `<!-- #contents -->` |
+| `#comment` | Comment form | Dynamic | `<!-- #comment -->` |
+| `#pcomment` | Page comment form | Dynamic | `<!-- #pcomment -->` |
+| `#article` | Article/BBS form | Dynamic | `<!-- #article -->` |
+| `#clear` | Clear float | Layout | `<!-- #clear -->` |
+
+**Example:**
+```
+Input:  #contents
+Output: <!-- #contents -->
+```
+
+Parameters are preserved:
+```
+Input:  #contents(depth=2)
+Output: <!-- #contents(depth=2) -->
+```
+
+Note: Dynamic functionality and layout features are lost, but the original syntax is preserved for reference.
+
 ## Attachments
 
 ### File Processing

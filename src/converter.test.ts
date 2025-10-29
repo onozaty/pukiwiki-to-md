@@ -252,6 +252,63 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("dynamic plugin conversion", () => {
+    it("should convert #contents to HTML comment", () => {
+      const input = "#contents";
+      const expected = "<!-- #contents -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #contents with parameters to HTML comment", () => {
+      const input = "#contents(depth=2)";
+      const expected = "<!-- #contents(depth=2) -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #comment to HTML comment", () => {
+      const input = "#comment";
+      const expected = "<!-- #comment -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #pcomment to HTML comment", () => {
+      const input = "#pcomment";
+      const expected = "<!-- #pcomment -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #article to HTML comment", () => {
+      const input = "#article";
+      const expected = "<!-- #article -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #clear to HTML comment", () => {
+      const input = "#clear";
+      const expected = "<!-- #clear -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should preserve dynamic plugins with content before and after", () => {
+      const input = "*見出し\n#contents\n通常テキスト";
+      const expected = "# 見出し\n<!-- #contents -->\n通常テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #vote (has special handling)", () => {
+      const input = "#vote(選択肢1[0])";
+      const expected =
+        "<!-- #vote(選択肢1[0]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| 選択肢1 | 0 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert other # plugins", () => {
+      const input = "#unknown_plugin";
+      const expected = "#unknown_plugin";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("line-head escape", () => {
     it("should escape Markdown special character *", () => {
       const input = "~*見出し";
