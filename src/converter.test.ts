@@ -742,6 +742,62 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("text alignment conversion", () => {
+    it("should remove CENTER prefix", () => {
+      const input = "CENTER:中央揃え";
+      const expected = "中央揃え";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove RIGHT prefix", () => {
+      const input = "RIGHT:右寄せ";
+      const expected = "右寄せ";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should remove LEFT prefix", () => {
+      const input = "LEFT:左寄せ";
+      const expected = "左寄せ";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle alignment with inline formatting", () => {
+      const input = "CENTER:''太字''テキスト";
+      const expected = "**太字**テキスト";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle alignment with links", () => {
+      const input = "CENTER:[[リンク]]";
+      const expected = "[リンク](リンク.md)";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not convert alignment in the middle of line", () => {
+      const input = "これはCENTER:中央ではない";
+      const expected = "これはCENTER:中央ではない";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle empty content after alignment", () => {
+      const input = "CENTER:";
+      const expected = "";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle alignment with trailing spaces", () => {
+      const input = "CENTER:テキスト  ";
+      const expected = "テキスト";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle multiple aligned lines", () => {
+      const input = "CENTER:1行目\nRIGHT:2行目\nLEFT:3行目";
+      const expected = "1行目\n2行目\n3行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+  });
+
   describe("mixed conversions", () => {
     it("should handle multiple syntax types in one content", () => {
       const input = "*見出し\n\n普通のテキスト\n\n>引用\n\n----";

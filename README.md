@@ -124,6 +124,16 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 |----------|----------|
 | `//comment` | `<!-- comment -->` |
 
+### Text Alignment
+
+| PukiWiki | Markdown |
+|----------|----------|
+| `LEFT:text` | `text` (prefix removed) |
+| `CENTER:text` | `text` (prefix removed) |
+| `RIGHT:text` | `text` (prefix removed) |
+
+Note: Alignment information is not preserved because Markdown has no standard syntax for text alignment, and HTML tags would prevent Markdown parsing of inline elements.
+
 ### Escape
 
 | PukiWiki | Markdown |

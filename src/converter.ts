@@ -148,6 +148,7 @@ const convertLine = (
     convertLineHeadEscape,
     convertHorizontalRule,
     convertLineBreak,
+    convertAlignment,
     convertHeading,
     convertList,
     convertQuote,
@@ -168,6 +169,31 @@ const convertLine = (
   converted = convertAttachments(converted, pageName);
 
   return converted;
+};
+
+/**
+ * Convert text alignment from PukiWiki by removing alignment prefix
+ *
+ * PukiWiki: LEFT:text, CENTER:text, RIGHT:text
+ * Output: text (prefix removed)
+ *
+ * Note: Alignment is not preserved because:
+ * - Markdown has no standard syntax for text alignment
+ * - HTML div tags prevent Markdown parsing inside
+ * - Users can manually add alignment if needed
+ *
+ * @param line - Line to convert
+ * @returns Converted line with alignment prefix removed
+ */
+const convertAlignment = (line: string): string => {
+  const trimmed = line.trimEnd();
+
+  // Match LEFT:, CENTER:, or RIGHT: at line start and remove prefix
+  const match = trimmed.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
+  if (!match || !match[1] || match[2] === undefined) return line;
+
+  const content = match[2];
+  return content;
 };
 
 /**
