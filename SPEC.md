@@ -734,64 +734,91 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 
 ### 5.11 ブロックプラグインのHTMLコメント化
 
-以下のPukiWikiブロックプラグインは、静的Markdownでは機能しないため、HTMLコメントとして保存されます：
+以下のPukiWikiブロックプラグインは、静的Markdownでは機能しないため、HTMLコメントとして保存されます（合計46個）：
 
-#### 5.11.1 システムディレクティブ
+#### 5.11.1 システムディレクティブ (4個)
 
 | PukiWiki | 変換後 | 備考 |
 |----------|--------|------|
 | `#author("timestamp","user_id","name")` | `<!-- #author(...) -->` | ページメタデータ（PukiWikiが自動生成） |
 | `#freeze` | `<!-- #freeze -->` | ページ凍結設定（編集制御） |
-| `#norelated` | `<!-- #norelated -->` | 関連ページ表示の抑制 |
 | `#nofollow` | `<!-- #nofollow -->` | 検索エンジンへのヒント |
-| `#norightbar` | `<!-- #norightbar -->` | 右サイドバー非表示設定 |
+| `#norelated` | `<!-- #norelated -->` | 関連ページ表示の抑制 |
 
-#### 5.11.2 動的機能プラグイン
+#### 5.11.2 コンテンツインクルード・表示 (4個)
 
 | PukiWiki | 変換後 | 備考 |
 |----------|--------|------|
-| `#contents` | `<!-- #contents -->` | 目次自動生成 |
-| `#comment` | `<!-- #comment -->` | コメント投稿フォーム |
-| `#pcomment` | `<!-- #pcomment -->` | ページコメントフォーム |
-| `#article` | `<!-- #article -->` | 記事投稿フォーム |
-| `#counter` | `<!-- #counter -->` | アクセスカウンター |
-| `#navi` | `<!-- #navi -->` | ナビゲーション |
+| `#amazon` | `<!-- #amazon -->` | Amazon商品情報表示 |
+| `#aname` | `<!-- #aname -->` | アンカー定義 |
+| `#include` | `<!-- #include -->` | 他ページのインクルード |
+| `#includesubmenu` | `<!-- #includesubmenu -->` | サブメニューのインクルード |
 
-#### 5.11.3 トラッカー・カレンダープラグイン
+#### 5.11.3 動的機能・フォーム (10個)
+
+| PukiWiki | 変換後 | 備考 |
+|----------|--------|------|
+| `#article` | `<!-- #article -->` | 記事投稿フォーム |
+| `#attach` | `<!-- #attach -->` | ファイルアップロードフォーム |
+| `#comment` | `<!-- #comment -->` | コメント投稿フォーム |
+| `#contents` | `<!-- #contents -->` | 目次自動生成 |
+| `#counter` | `<!-- #counter -->` | アクセスカウンター |
+| `#insert` | `<!-- #insert -->` | 挿入フォーム |
+| `#lookup` | `<!-- #lookup -->` | 辞書検索 |
+| `#navi` | `<!-- #navi -->` | ナビゲーション |
+| `#newpage` | `<!-- #newpage -->` | 新規ページ作成フォーム |
+| `#pcomment` | `<!-- #pcomment -->` | ページコメントフォーム |
+
+#### 5.11.4 リスト・ナビゲーション (10個)
+
+| PukiWiki | 変換後 | 備考 |
+|----------|--------|------|
+| `#back` | `<!-- #back -->` | 戻るリンク |
+| `#ls` | `<!-- #ls -->` | 子ページ一覧 |
+| `#ls2` | `<!-- #ls2 -->` | 子ページ一覧（拡張版） |
+| `#menu` | `<!-- #menu -->` | メニュー表示 |
+| `#online` | `<!-- #online -->` | オンラインユーザー表示 |
+| `#popular` | `<!-- #popular -->` | 人気ページランキング |
+| `#recent` | `<!-- #recent -->` | 最近の更新表示 |
+| `#related` | `<!-- #related -->` | 関連ページ表示 |
+| `#search` | `<!-- #search -->` | 検索フォーム |
+| `#topicpath` | `<!-- #topicpath -->` | トピックパス（パンくずリスト） |
+
+#### 5.11.5 トラッカー・課題管理 (4個)
 
 | PukiWiki | 変換後 |
 |----------|--------|
-| `#tracker` | `<!-- #tracker -->` |
-| `#tracker_list` | `<!-- #tracker_list -->` |
 | `#bugtrack` | `<!-- #bugtrack -->` |
 | `#bugtrack_list` | `<!-- #bugtrack_list -->` |
+| `#tracker` | `<!-- #tracker -->` |
+| `#tracker_list` | `<!-- #tracker_list -->` |
+
+#### 5.11.6 カレンダー (5個)
+
+| PukiWiki | 変換後 |
+|----------|--------|
 | `#calendar` | `<!-- #calendar -->` |
+| `#calendar2` | `<!-- #calendar2 -->` |
 | `#calendar_edit` | `<!-- #calendar_edit -->` |
 | `#calendar_read` | `<!-- #calendar_read -->` |
 | `#calendar_viewer` | `<!-- #calendar_viewer -->` |
-| `#calendar2` | `<!-- #calendar2 -->` |
 
-#### 5.11.4 フォーム・編集プラグイン
+#### 5.11.7 ユーティリティ・その他 (9個)
 
-| PukiWiki | 変換後 |
-|----------|--------|
-| `#poll` | `<!-- #poll -->` |
-| `#attach` | `<!-- #attach -->` |
-| `#edit` | `<!-- #edit -->` |
-| `#rename` | `<!-- #rename -->` |
+| PukiWiki | 変換後 | 備考 |
+|----------|--------|------|
+| `#clear` | `<!-- #clear -->` | floatクリア（レイアウト制御） |
+| `#memo` | `<!-- #memo -->` | メモ |
+| `#paint` | `<!-- #paint -->` | お絵かきツール |
+| `#random` | `<!-- #random -->` | ランダム表示 |
+| `#server` | `<!-- #server -->` | サーバー情報 |
+| `#setlinebreak` | `<!-- #setlinebreak -->` | 改行設定 |
+| `#showrss` | `<!-- #showrss -->` | RSSフィード表示 |
+| `#stationary` | `<!-- #stationary -->` | 雛形・テンプレート |
+| `#version` | `<!-- #version -->` | バージョン表示 |
+| `#versionlist` | `<!-- #versionlist -->` | バージョン一覧 |
 
-#### 5.11.5 ナビゲーション・表示プラグイン
-
-| PukiWiki | 変換後 |
-|----------|--------|
-| `#related` | `<!-- #related -->` |
-| `#recent` | `<!-- #recent -->` |
-| `#online` | `<!-- #online -->` |
-| `#topicpath` | `<!-- #topicpath -->` |
-| `#search` | `<!-- #search -->` |
-| `#clear` | `<!-- #clear -->` |
-
-#### 5.11.6 カスタムプラグインの除外
+#### 5.11.8 カスタムプラグインの除外
 
 `--exclude-plugins` オプションを使用して、独自のプラグインを追加で除外できます：
 
@@ -935,14 +962,15 @@ PukiWikiの行頭エスケープ（`~`）は、Markdownのバックスラッシ�
 
 **変換対象のプラグイン:**
 
-詳細は「5.11 ブロックプラグインのHTMLコメント化」を参照してください。デフォルトで以下のプラグインがHTMLコメント化されます：
+詳細は「5.11 ブロックプラグインのHTMLコメント化」を参照してください。デフォルトで46個のブロックプラグインがHTMLコメント化されます：
 
-- **システムディレクティブ**: `author`, `freeze`, `norelated`, `nofollow`, `norightbar`
-- **動的機能**: `contents`, `comment`, `pcomment`, `article`, `counter`, `navi`
-- **トラッカー**: `tracker`, `tracker_list`, `bugtrack`, `bugtrack_list`
-- **カレンダー**: `calendar`, `calendar_edit`, `calendar_read`, `calendar_viewer`, `calendar2`
-- **フォーム・編集**: `poll`, `attach`, `edit`, `rename`
-- **ナビゲーション**: `related`, `recent`, `online`, `topicpath`, `search`, `clear`
+- **システムディレクティブ (4個)**: `author`, `freeze`, `nofollow`, `norelated`
+- **コンテンツインクルード・表示 (4個)**: `amazon`, `aname`, `include`, `includesubmenu`
+- **動的機能・フォーム (10個)**: `article`, `attach`, `comment`, `contents`, `counter`, `insert`, `lookup`, `navi`, `newpage`, `pcomment`
+- **リスト・ナビゲーション (10個)**: `back`, `ls`, `ls2`, `menu`, `online`, `popular`, `recent`, `related`, `search`, `topicpath`
+- **トラッカー (4個)**: `bugtrack`, `bugtrack_list`, `tracker`, `tracker_list`
+- **カレンダー (5個)**: `calendar`, `calendar2`, `calendar_edit`, `calendar_read`, `calendar_viewer`
+- **ユーティリティ (9個)**: `clear`, `memo`, `paint`, `random`, `server`, `setlinebreak`, `showrss`, `stationary`, `version`, `versionlist`
 
 **例:**
 
@@ -985,9 +1013,16 @@ pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
 - HTMLコメントとして保存されることで、元の記述を参照可能
 - 必要に応じて手動でMarkdown形式に書き直すことができます
 
-### 5.16 その他のプラグイン記法
+### 5.16 独自変換処理のあるプラグイン
 
-上記以外のプラグイン記法（`#ls`、`#include`、`#tracker`、`#calendar`など）はそのまま残します。
+以下のプラグインは、HTMLコメント化せず、Markdown形式に変換されます：
+
+- `#vote` - 投票プラグイン（Markdown表に変換）
+- `#br` - 改行プラグイン（`<br>`タグに変換）
+- `#hr` - 水平線プラグイン（`---`に変換）
+- `#ref` - ファイル参照プラグイン（Markdown画像/リンクまたは`<img>`タグに変換）
+
+これら以外のプラグイン記法で、除外リストに含まれないものはそのまま残ります。
 
 ---
 

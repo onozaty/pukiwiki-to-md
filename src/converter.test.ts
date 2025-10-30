@@ -357,6 +357,88 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("newly added block plugin exclusion", () => {
+    it("should convert #include to HTML comment", () => {
+      const input = "#include(OtherPage)";
+      const expected = "<!-- #include(OtherPage) -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #ls to HTML comment", () => {
+      const input = "#ls";
+      const expected = "<!-- #ls -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #newpage to HTML comment", () => {
+      const input = "#newpage";
+      const expected = "<!-- #newpage -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #menu to HTML comment", () => {
+      const input = "#menu";
+      const expected = "<!-- #menu -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #popular to HTML comment", () => {
+      const input = "#popular";
+      const expected = "<!-- #popular -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #showrss to HTML comment", () => {
+      const input = "#showrss(https://example.com/feed)";
+      const expected = "<!-- #showrss(https://example.com/feed) -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #amazon to HTML comment", () => {
+      const input = "#amazon(4123456789)";
+      const expected = "<!-- #amazon(4123456789) -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #stationary to HTML comment", () => {
+      const input = "#stationary";
+      const expected = "<!-- #stationary -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #version to HTML comment", () => {
+      const input = "#version";
+      const expected = "<!-- #version -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
+  describe("plugins without block-type support should not be excluded", () => {
+    it("should not convert #edit (not a block plugin)", () => {
+      const input = "#edit";
+      const expected = "#edit";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #rename (not a block plugin)", () => {
+      const input = "#rename";
+      const expected = "#rename";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #poll (does not exist)", () => {
+      const input = "#poll";
+      const expected = "#poll";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #norightbar (does not exist)", () => {
+      const input = "#norightbar";
+      const expected = "#norightbar";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
   describe("custom block plugin exclusion", () => {
     it("should convert custom plugin when specified", () => {
       const input = "#myplugin";
@@ -517,12 +599,6 @@ describe("convertToMarkdown", () => {
     it("should convert #nofollow directive to HTML comment", () => {
       const input = "#nofollow";
       const expected = "<!-- #nofollow -->";
-      expect(convertToMarkdown(input, "テスト")).toBe(expected);
-    });
-
-    it("should convert #norightbar directive to HTML comment", () => {
-      const input = "#norightbar";
-      const expected = "<!-- #norightbar -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
