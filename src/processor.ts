@@ -79,12 +79,14 @@ const getAttachmentFiles = async (attachDir: string): Promise<string[]> => {
  * @param filePath - Wiki file path
  * @param outputDir - Output directory path
  * @param encoding - File encoding
+ * @param excludeBlockPlugins - Block plugins to exclude
  * @returns Output path if successful, null if failed
  */
 const processWikiFile = async (
   filePath: string,
   outputDir: string,
   encoding: string,
+  excludeBlockPlugins: string[],
 ): Promise<{ success: boolean; outputPath?: string; error?: string }> => {
   try {
     const fileName = path.basename(filePath, ".txt");
@@ -105,7 +107,7 @@ const processWikiFile = async (
     const content = await readWikiFile(filePath, encoding);
 
     // Convert PukiWiki syntax to Markdown
-    const converted = convertToMarkdown(content, pageName);
+    const converted = convertToMarkdown(content, pageName, excludeBlockPlugins);
 
     // Write as markdown
     await writeMarkdown(outputPath, converted);
@@ -167,6 +169,7 @@ const processAttachmentFile = async (
  * @param attachDir - Attachment directory path
  * @param outputDir - Output directory path
  * @param encoding - File encoding
+ * @param excludeBlockPlugins - Block plugins to exclude
  * @returns Conversion statistics
  */
 export const processConversion = async (
@@ -174,6 +177,7 @@ export const processConversion = async (
   attachDir: string,
   outputDir: string,
   encoding: string,
+  excludeBlockPlugins: string[] = [],
 ): Promise<ConversionStats> => {
   let pagesConverted = 0;
   let pageErrors = 0;
@@ -194,7 +198,12 @@ export const processConversion = async (
 
   // Process wiki files
   for (const filePath of wikiFiles) {
-    const result = await processWikiFile(filePath, outputDir, encoding);
+    const result = await processWikiFile(
+      filePath,
+      outputDir,
+      encoding,
+      excludeBlockPlugins,
+    );
     if (result.success) {
       console.log(`[SUCCESS] ${filePath} → ${result.outputPath} (converted)`);
       pagesConverted++;
