@@ -386,49 +386,68 @@ const convertUnsupportedBlockPlugin = (
 ): string => {
   const trimmed = line.trimEnd();
 
-  // Default block plugins to exclude
+  // Default block plugins to exclude (all official PukiWiki block plugins except those with custom conversion)
   const DEFAULT_EXCLUDE_BLOCK_PLUGINS = [
     // System directives
     "author",
     "freeze",
-    "norelated",
     "nofollow",
-    "norightbar",
+    "norelated",
 
-    // Dynamic functionality
-    "contents",
-    "comment",
-    "pcomment",
+    // Content inclusion & display
+    "amazon",
+    "aname",
+    "include",
+    "includesubmenu",
+
+    // Dynamic functionality & forms
     "article",
-    "clear",
+    "attach",
+    "comment",
+    "contents",
     "counter",
+    "insert",
+    "lookup",
     "navi",
+    "newpage",
+    "pcomment",
+
+    // Lists & navigation
+    "back",
+    "ls",
+    "ls2",
+    "menu",
+    "online",
+    "popular",
+    "recent",
+    "related",
+    "search",
+    "topicpath",
 
     // Tracker & issue management
-    "tracker",
-    "tracker_list",
     "bugtrack",
     "bugtrack_list",
+    "tracker",
+    "tracker_list",
 
     // Calendar
     "calendar",
+    "calendar2",
     "calendar_edit",
     "calendar_read",
     "calendar_viewer",
-    "calendar2",
 
-    // Forms & editing
-    "poll",
-    "attach",
-    "edit",
-    "rename",
-
-    // Navigation & dynamic display
-    "related",
-    "recent",
-    "online",
-    "topicpath",
-    "search",
+    // Utilities & misc
+    "clear",
+    "memo",
+    "paint",
+    "random",
+    "server",
+    "setlinebreak",
+    "showrss",
+    "stationary",
+    "version",
+    "versionlist",
   ];
 
   // Combine default and custom plugins

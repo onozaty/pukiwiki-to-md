@@ -284,38 +284,68 @@ Note: The voting functionality is lost, and the vote data is preserved as a stat
 
 ### Unsupported Plugins
 
-The following plugins cannot be represented in Markdown and are converted to HTML comments:
+The following block plugins cannot be represented in Markdown and are converted to HTML comments (46 plugins total):
 
+**System directives:**
 - `#author(...)` - Page metadata (author and timestamp)
 - `#freeze` - Page freeze setting
-- `#norelated` - Suppress related pages display
 - `#nofollow` - Search engine hint
-- `#norightbar` - Hide right sidebar
-- `#contents` - Table of contents
-- `#comment` - Comment form
-- `#pcomment` - Page comment form
+- `#norelated` - Suppress related pages display
+
+**Content inclusion & display:**
+- `#amazon` - Amazon product information
+- `#aname` - Anchor definition
+- `#include` - Include another page
+- `#includesubmenu` - Include submenu
+
+**Dynamic functionality & forms:**
 - `#article` - Article/BBS form
+- `#attach` - File upload form
+- `#comment` - Comment form
+- `#contents` - Table of contents
 - `#counter` - Access counter
+- `#insert` - Insert form
+- `#lookup` - Dictionary lookup
 - `#navi` - Navigation
-- `#tracker` - Tracker input form
-- `#tracker_list` - Tracker list display
+- `#newpage` - New page creation form
+- `#pcomment` - Page comment form
+
+**Lists & navigation:**
+- `#back` - Back link
+- `#ls` - Child page list
+- `#ls2` - Child page list (enhanced)
+- `#menu` - Menu display
+- `#online` - Online users display
+- `#popular` - Popular pages ranking
+- `#recent` - Recent changes display
+- `#related` - Related pages display
+- `#search` - Search form
+- `#topicpath` - Breadcrumb navigation
+
+**Tracker & issue management:**
 - `#bugtrack` - Bug tracker input form
 - `#bugtrack_list` - Bug tracker list display
+- `#tracker` - Tracker input form
+- `#tracker_list` - Tracker list display
+
+**Calendar:**
 - `#calendar` - Calendar display
+- `#calendar2` - Calendar (alternative)
 - `#calendar_edit` - Calendar edit form
 - `#calendar_read` - Calendar read view
 - `#calendar_viewer` - Calendar viewer
-- `#calendar2` - Calendar (alternative)
-- `#poll` - Poll/survey form
-- `#attach` - File upload form
-- `#edit` - Edit form
-- `#rename` - Rename form
-- `#related` - Related pages display
-- `#recent` - Recent changes display
-- `#online` - Online users display
-- `#topicpath` - Breadcrumb navigation
-- `#search` - Search form
+
+**Utilities & misc:**
 - `#clear` - Clear float (layout)
+- `#memo` - Memo
+- `#paint` - Drawing tool
+- `#random` - Random display
+- `#server` - Server information
+- `#setlinebreak` - Line break setting
+- `#showrss` - RSS feed display
+- `#stationary` - Template/stationery
+- `#version` - Version display
+- `#versionlist` - Version list
 
 All of these are converted to HTML comments like `<!-- #plugin -->`. Parameters are preserved:
 
@@ -371,7 +401,7 @@ output/プロジェクト/タスク_attachment_image.png
 
 ### Converted to HTML Comments
 
-Many PukiWiki plugins are automatically converted to HTML comments because they cannot be represented in static Markdown. See the [Unsupported Plugins](#unsupported-plugins) section for the complete list of 30+ plugins that are converted.
+Many PukiWiki plugins are automatically converted to HTML comments because they cannot be represented in static Markdown. See the [Unsupported Plugins](#unsupported-plugins) section for the complete list of 46 plugins that are converted.
 
 ### Excluded Pages
 
@@ -385,7 +415,6 @@ Pages starting with `:` are automatically excluded:
 
 The following PukiWiki features are not converted and remain as-is:
 
-- Other plugin syntax not in the exclusion list (e.g., `#ls`, `#include`)
 - Custom plugins (unless specified with `--exclude-plugins`)
 
 ## Requirements
