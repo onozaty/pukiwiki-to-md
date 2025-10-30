@@ -307,6 +307,89 @@ describe("convertToMarkdown", () => {
       const expected = "#unknown_plugin";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
+
+    it("should convert #counter to HTML comment", () => {
+      const input = "#counter";
+      const expected = "<!-- #counter -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #navi to HTML comment", () => {
+      const input = "#navi";
+      const expected = "<!-- #navi -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #tracker to HTML comment", () => {
+      const input = "#tracker";
+      const expected = "<!-- #tracker -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #calendar to HTML comment", () => {
+      const input = "#calendar";
+      const expected = "<!-- #calendar -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #search to HTML comment", () => {
+      const input = "#search";
+      const expected = "<!-- #search -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert similar plugin names (#commentxxx)", () => {
+      const input = "#commentxxx";
+      const expected = "#commentxxx";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert plugin with suffix (#counter2)", () => {
+      const input = "#counter2";
+      const expected = "#counter2";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert plugin with prefix (#mycounter)", () => {
+      const input = "#mycounter";
+      const expected = "#mycounter";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+  });
+
+  describe("custom block plugin exclusion", () => {
+    it("should convert custom plugin when specified", () => {
+      const input = "#myplugin";
+      const expected = "<!-- #myplugin -->";
+      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+    });
+
+    it("should convert multiple custom plugins", () => {
+      const input = "#customplugin1\nテキスト\n#customplugin2";
+      const expected =
+        "<!-- #customplugin1 -->\nテキスト\n<!-- #customplugin2 -->";
+      expect(
+        convertToMarkdown(input, "テスト", ["customplugin1", "customplugin2"]),
+      ).toBe(expected);
+    });
+
+    it("should convert custom plugin with parameters", () => {
+      const input = "#myplugin(param1,param2)";
+      const expected = "<!-- #myplugin(param1,param2) -->";
+      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+    });
+
+    it("should not convert non-specified custom plugin", () => {
+      const input = "#otherplugin";
+      const expected = "#otherplugin";
+      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+    });
+
+    it("should handle custom plugins with special regex characters", () => {
+      const input = "#my.plugin";
+      const expected = "<!-- #my.plugin -->";
+      expect(convertToMarkdown(input, "テスト", ["my.plugin"])).toBe(expected);
+    });
   });
 
   describe("line-head escape", () => {
@@ -410,41 +493,42 @@ describe("convertToMarkdown", () => {
     });
   });
 
-  describe("system directive removal", () => {
-    it("should remove #author directive", () => {
+  describe("system directive conversion", () => {
+    it("should convert #author directive to HTML comment", () => {
       const input =
         '#author("2025-03-14T11:18:07+09:00","default:user","User Name")';
-      const expected = "";
+      const expected =
+        '<!-- #author("2025-03-14T11:18:07+09:00","default:user","User Name") -->';
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove #freeze directive", () => {
+    it("should convert #freeze directive to HTML comment", () => {
       const input = "#freeze";
-      const expected = "";
+      const expected = "<!-- #freeze -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove #norelated directive", () => {
+    it("should convert #norelated directive to HTML comment", () => {
       const input = "#norelated";
-      const expected = "";
+      const expected = "<!-- #norelated -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove #nofollow directive", () => {
+    it("should convert #nofollow directive to HTML comment", () => {
       const input = "#nofollow";
-      const expected = "";
+      const expected = "<!-- #nofollow -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove #norightbar directive", () => {
+    it("should convert #norightbar directive to HTML comment", () => {
       const input = "#norightbar";
-      const expected = "";
+      const expected = "<!-- #norightbar -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove system directives with trailing spaces", () => {
+    it("should convert system directives with trailing spaces", () => {
       const input = "#freeze  ";
-      const expected = "";
+      const expected = "<!-- #freeze -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -454,16 +538,17 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove multiple system directives in content", () => {
+    it("should convert multiple system directives in content", () => {
       const input = "#freeze\nテキスト\n#norelated";
-      const expected = "テキスト";
+      const expected = "<!-- #freeze -->\nテキスト\n<!-- #norelated -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should remove #author and keep other content", () => {
+    it("should convert #author and keep other content", () => {
       const input =
         '#author("2025-03-14T11:18:07+09:00","default:user","User")\n*見出し\nテキスト';
-      const expected = "# 見出し\nテキスト";
+      const expected =
+        '<!-- #author("2025-03-14T11:18:07+09:00","default:user","User") -->\n# 見出し\nテキスト';
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
   });

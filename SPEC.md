@@ -31,6 +31,7 @@ pukiwiki-to-md --wiki <wikiフォルダ> --attach <attachフォルダ> --output 
 | オプション | 短縮形 | デフォルト値 | 説明 |
 |----------|-------|------------|------|
 | `--encoding` | `-e` | `utf-8` | 入力ファイルの文字エンコーディング |
+| `--exclude-plugins` | `-x` | (空) | カスタムブロックプラグインのカンマ区切りリスト |
 | `--help` | `-h` | - | ヘルプを表示 |
 | `--version` | `-v` | - | バージョンを表示 |
 
@@ -42,6 +43,9 @@ pukiwiki-to-md -w ./pukiwiki/wiki -a ./pukiwiki/attach -o ./output
 
 # EUC-JPエンコーディングのPukiWikiを変換
 pukiwiki-to-md -w ./wiki -a ./attach -o ./output --encoding euc-jp
+
+# カスタムプラグインを除外
+pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
 
 # ヘルプ表示
 pukiwiki-to-md --help
@@ -728,26 +732,83 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 
 各行の先頭空白を1つずつ削除するため、相対的なインデントが保持されます。
 
-### 5.11 システムディレクティブの削除
+### 5.11 ブロックプラグインのHTMLコメント化
 
-以下のPukiWikiシステムディレクティブは、静的Markdownでは機能しないため削除されます：
+以下のPukiWikiブロックプラグインは、静的Markdownでは機能しないため、HTMLコメントとして保存されます：
+
+#### 5.11.1 システムディレクティブ
 
 | PukiWiki | 変換後 | 備考 |
 |----------|--------|------|
-| `#author("timestamp","user_id","name")` | （削除） | ページメタデータ（PukiWikiが自動生成） |
-| `#freeze` | （削除） | ページ凍結設定（編集制御） |
-| `#norelated` | （削除） | 関連ページ表示の抑制 |
-| `#nofollow` | （削除） | 検索エンジンへのヒント |
-| `#norightbar` | （削除） | 右サイドバー非表示設定 |
+| `#author("timestamp","user_id","name")` | `<!-- #author(...) -->` | ページメタデータ（PukiWikiが自動生成） |
+| `#freeze` | `<!-- #freeze -->` | ページ凍結設定（編集制御） |
+| `#norelated` | `<!-- #norelated -->` | 関連ページ表示の抑制 |
+| `#nofollow` | `<!-- #nofollow -->` | 検索エンジンへのヒント |
+| `#norightbar` | `<!-- #norightbar -->` | 右サイドバー非表示設定 |
 
-**削除理由:**
-- これらはPukiWikiシステムの動作を制御するディレクティブです
-- 静的Markdownファイルでは機能せず、意味を持ちません
-- 著者情報やタイムスタンプはgitのコミット履歴で管理できます
+#### 5.11.2 動的機能プラグイン
+
+| PukiWiki | 変換後 | 備考 |
+|----------|--------|------|
+| `#contents` | `<!-- #contents -->` | 目次自動生成 |
+| `#comment` | `<!-- #comment -->` | コメント投稿フォーム |
+| `#pcomment` | `<!-- #pcomment -->` | ページコメントフォーム |
+| `#article` | `<!-- #article -->` | 記事投稿フォーム |
+| `#counter` | `<!-- #counter -->` | アクセスカウンター |
+| `#navi` | `<!-- #navi -->` | ナビゲーション |
+
+#### 5.11.3 トラッカー・カレンダープラグイン
+
+| PukiWiki | 変換後 |
+|----------|--------|
+| `#tracker` | `<!-- #tracker -->` |
+| `#tracker_list` | `<!-- #tracker_list -->` |
+| `#bugtrack` | `<!-- #bugtrack -->` |
+| `#bugtrack_list` | `<!-- #bugtrack_list -->` |
+| `#calendar` | `<!-- #calendar -->` |
+| `#calendar_edit` | `<!-- #calendar_edit -->` |
+| `#calendar_read` | `<!-- #calendar_read -->` |
+| `#calendar_viewer` | `<!-- #calendar_viewer -->` |
+| `#calendar2` | `<!-- #calendar2 -->` |
+
+#### 5.11.4 フォーム・編集プラグイン
+
+| PukiWiki | 変換後 |
+|----------|--------|
+| `#poll` | `<!-- #poll -->` |
+| `#attach` | `<!-- #attach -->` |
+| `#edit` | `<!-- #edit -->` |
+| `#rename` | `<!-- #rename -->` |
+
+#### 5.11.5 ナビゲーション・表示プラグイン
+
+| PukiWiki | 変換後 |
+|----------|--------|
+| `#related` | `<!-- #related -->` |
+| `#recent` | `<!-- #recent -->` |
+| `#online` | `<!-- #online -->` |
+| `#topicpath` | `<!-- #topicpath -->` |
+| `#search` | `<!-- #search -->` |
+| `#clear` | `<!-- #clear -->` |
+
+#### 5.11.6 カスタムプラグインの除外
+
+`--exclude-plugins` オプションを使用して、独自のプラグインを追加で除外できます：
+
+```bash
+pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
+```
+
+この場合、`#myplugin` と `#customplugin` もHTMLコメント化されます。
+
+**HTMLコメント化の理由:**
+- これらはPukiWikiの動的機能やレイアウト制御です
+- 静的Markdownファイルでは機能しませんが、参照のため保存されます
+- 必要に応じて手動でMarkdown形式に書き直すことができます
 
 **注意事項:**
-- 行頭に空白やタブがある場合は整形済みテキストとして扱われ、削除されません
-- これらのディレクティブを含む行全体が削除されます（空行になります）
+- 行頭に空白やタブがある場合は整形済みテキストとして扱われ、変換されません
+- パラメータも含めて保存されます
 
 **例:**
 ```
@@ -755,10 +816,14 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 #author("2025-03-14T11:18:07+09:00","default:user","User")
 #freeze
 *見出し
+#contents(depth=2)
 テキスト
 
 出力:
+<!-- #author("2025-03-14T11:18:07+09:00","default:user","User") -->
+<!-- #freeze -->
 # 見出し
+<!-- #contents(depth=2) -->
 テキスト
 ```
 
@@ -870,13 +935,14 @@ PukiWikiの行頭エスケープ（`~`）は、Markdownのバックスラッシ�
 
 **変換対象のプラグイン:**
 
-| PukiWiki記法 | 説明 | 分類 | Markdown出力 |
-|-------------|------|------|-------------|
-| `#contents` | 目次自動生成 | 動的機能 | `<!-- #contents -->` |
-| `#comment` | コメント投稿フォーム | 動的機能 | `<!-- #comment -->` |
-| `#pcomment` | ページコメントフォーム | 動的機能 | `<!-- #pcomment -->` |
-| `#article` | 簡易掲示板フォーム | 動的機能 | `<!-- #article -->` |
-| `#clear` | テキスト回り込み解除 | レイアウト制御 | `<!-- #clear -->` |
+詳細は「5.11 ブロックプラグインのHTMLコメント化」を参照してください。デフォルトで以下のプラグインがHTMLコメント化されます：
+
+- **システムディレクティブ**: `author`, `freeze`, `norelated`, `nofollow`, `norightbar`
+- **動的機能**: `contents`, `comment`, `pcomment`, `article`, `counter`, `navi`
+- **トラッカー**: `tracker`, `tracker_list`, `bugtrack`, `bugtrack_list`
+- **カレンダー**: `calendar`, `calendar_edit`, `calendar_read`, `calendar_viewer`, `calendar2`
+- **フォーム・編集**: `poll`, `attach`, `edit`, `rename`
+- **ナビゲーション**: `related`, `recent`, `online`, `topicpath`, `search`, `clear`
 
 **例:**
 
@@ -886,12 +952,14 @@ PukiWikiの行頭エスケープ（`~`）は、Markdownのバックスラッシ�
 *見出し1
 **見出し2
 #comment
+#counter
 
 出力:
 <!-- #contents -->
 # 見出し1
 ## 見出し2
 <!-- #comment -->
+<!-- #counter -->
 ```
 
 **パラメータ付きプラグイン:**
@@ -902,6 +970,14 @@ PukiWikiの行頭エスケープ（`~`）は、Markdownのバックスラッシ�
 
 出力:
 <!-- #contents(depth=2) -->
+```
+
+**カスタムプラグインの除外:**
+
+`--exclude-plugins` オプションでカスタムプラグインを追加できます：
+
+```bash
+pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
 ```
 
 **注意事項:**

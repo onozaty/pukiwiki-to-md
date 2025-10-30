@@ -51,6 +51,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 | `--attach <path>` | `-a` | (required) | Path to PukiWiki attach folder |
 | `--output <path>` | `-o` | (required) | Output directory path |
 | `--encoding <encoding>` | `-e` | `utf-8` | Input file encoding (utf-8 or euc-jp) |
+| `--exclude-plugins <list>` | `-x` | (empty) | Comma-separated custom block plugins to exclude |
 | `--help` | `-h` | | Display help information |
 | `--version` | `-v` | | Display version number |
 
@@ -66,6 +67,12 @@ npx @onozaty/pukiwiki-to-md -w ./pukiwiki/wiki -a ./pukiwiki/attach -o ./output
 
 ```bash
 npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -e euc-jp
+```
+
+**Exclude custom plugins:**
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
 ```
 
 ## Conversion Features
@@ -279,27 +286,55 @@ Note: The voting functionality is lost, and the vote data is preserved as a stat
 
 The following plugins cannot be represented in Markdown and are converted to HTML comments:
 
-| PukiWiki | Description | Type | Output |
-|----------|-------------|------|--------|
-| `#contents` | Table of contents | Dynamic | `<!-- #contents -->` |
-| `#comment` | Comment form | Dynamic | `<!-- #comment -->` |
-| `#pcomment` | Page comment form | Dynamic | `<!-- #pcomment -->` |
-| `#article` | Article/BBS form | Dynamic | `<!-- #article -->` |
-| `#clear` | Clear float | Layout | `<!-- #clear -->` |
+- `#author(...)` - Page metadata (author and timestamp)
+- `#freeze` - Page freeze setting
+- `#norelated` - Suppress related pages display
+- `#nofollow` - Search engine hint
+- `#norightbar` - Hide right sidebar
+- `#contents` - Table of contents
+- `#comment` - Comment form
+- `#pcomment` - Page comment form
+- `#article` - Article/BBS form
+- `#counter` - Access counter
+- `#navi` - Navigation
+- `#tracker` - Tracker input form
+- `#tracker_list` - Tracker list display
+- `#bugtrack` - Bug tracker input form
+- `#bugtrack_list` - Bug tracker list display
+- `#calendar` - Calendar display
+- `#calendar_edit` - Calendar edit form
+- `#calendar_read` - Calendar read view
+- `#calendar_viewer` - Calendar viewer
+- `#calendar2` - Calendar (alternative)
+- `#poll` - Poll/survey form
+- `#attach` - File upload form
+- `#edit` - Edit form
+- `#rename` - Rename form
+- `#related` - Related pages display
+- `#recent` - Recent changes display
+- `#online` - Online users display
+- `#topicpath` - Breadcrumb navigation
+- `#search` - Search form
+- `#clear` - Clear float (layout)
 
-**Example:**
-```
-Input:  #contents
-Output: <!-- #contents -->
-```
+All of these are converted to HTML comments like `<!-- #plugin -->`. Parameters are preserved:
 
-Parameters are preserved:
 ```
 Input:  #contents(depth=2)
 Output: <!-- #contents(depth=2) -->
 ```
 
-Note: Dynamic functionality and layout features are lost, but the original syntax is preserved for reference.
+**Custom Plugin Exclusion:**
+
+You can specify additional custom plugins to exclude using the `--exclude-plugins` option:
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
+```
+
+This will convert `#myplugin` and `#customplugin` to HTML comments in addition to the default plugins listed above.
+
+**Note:** Dynamic functionality and layout features are lost, but the original syntax is preserved for reference in HTML comments.
 
 ## Attachments
 
@@ -334,15 +369,9 @@ output/プロジェクト/タスク_attachment_image.png
 
 ## Limitations
 
-### Removed System Directives
+### Converted to HTML Comments
 
-The following PukiWiki system directives are automatically removed during conversion:
-
-- `#author` - Page metadata (author and timestamp)
-- `#freeze` - Page freeze setting
-- `#norelated` - Suppress related pages
-- `#nofollow` - Search engine hint
-- `#norightbar` - Hide right sidebar
+Many PukiWiki plugins are automatically converted to HTML comments because they cannot be represented in static Markdown. See the [Unsupported Plugins](#unsupported-plugins) section for the complete list of 30+ plugins that are converted.
 
 ### Excluded Pages
 
@@ -356,7 +385,8 @@ Pages starting with `:` are automatically excluded:
 
 The following PukiWiki features are not converted and remain as-is:
 
-- Plugin syntax (e.g., `#contents`, `#ls`, `#include`)
+- Other plugin syntax not in the exclusion list (e.g., `#ls`, `#include`)
+- Custom plugins (unless specified with `--exclude-plugins`)
 
 ## Requirements
 
