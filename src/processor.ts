@@ -38,9 +38,12 @@ const getWikiFiles = async (
     const baseName = path.basename(fileName, ".txt");
     try {
       const pageName = decodeFileName(baseName, encoding);
-      // Exclude pages starting with : (colon)
-      // Examples: :config, :RenameLog
-      if (pageName.startsWith(":")) {
+      // Exclude system pages only (users can create pages starting with :)
+      if (
+        pageName === ":config" ||
+        pageName.startsWith(":config/") ||
+        pageName === ":RenameLog"
+      ) {
         return false;
       }
     } catch {

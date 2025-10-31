@@ -415,11 +415,12 @@ Many PukiWiki plugins are automatically converted to HTML comments because they 
 
 ### Excluded Pages
 
-Pages starting with `:` are automatically excluded:
+The following system pages are automatically excluded:
 
-- `:config/*` - Configuration pages
+- `:config` and `:config/*` - Configuration pages
 - `:RenameLog` - Rename history
-- Other system pages
+
+Note: User-created pages starting with `:` (e.g., `:userpage`) are not excluded and will be converted normally.
 
 ### Unsupported Syntax
 

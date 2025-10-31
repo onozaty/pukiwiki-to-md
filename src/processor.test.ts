@@ -33,14 +33,16 @@ describe("processConversion", () => {
     await cleanupTempDir(testDir);
   });
 
-  it("should process wiki files and exclude pages starting with colon", async () => {
+  it("should process wiki files and exclude system pages", async () => {
     // Create test files
     // E38386E382B9E38388 = テスト (regular page)
-    // 3A636F6E666967 = :config (should be excluded)
-    // 3A52656E616D654C6F67 = :RenameLog (should be excluded)
+    // 3A636F6E666967 = :config (system page, should be excluded)
+    // 3A636F6E6669672F506C7567696E = :config/Plugin (system page, should be excluded)
+    // 3A52656E616D654C6F67 = :RenameLog (system page, should be excluded)
     await createTestFiles(wikiDir, {
       "E38386E382B9E38388.txt": "Test content",
       "3A636F6E666967.txt": "Config content", // :config
+      "3A636F6E6669672F506C7567696E.txt": "Config plugin content", // :config/Plugin
       "3A52656E616D654C6F67.txt": "Rename log", // :RenameLog
     });
 
@@ -57,6 +59,36 @@ describe("processConversion", () => {
 
     // Check stats
     expect(stats.pagesConverted).toBe(1);
+    expect(stats.pageErrors).toBe(0);
+  });
+
+  it("should process user pages starting with colon", async () => {
+    // User-created pages starting with : should be processed
+    // 3A757365727061676531 = :userpage1
+    // 3A636F6E666967585858 = :configXXX (not a system page)
+    await createTestFiles(wikiDir, {
+      "E38386E382B9E38388.txt": "Test content",
+      "3A757365727061676531.txt": "User page content", // :userpage1
+      "3A636F6E666967585858.txt": "User config page", // :configXXX
+    });
+
+    const stats = await processConversion(
+      wikiDir,
+      attachDir,
+      outputDir,
+      "utf-8",
+    );
+
+    // Check output files - all three pages should be converted
+    const outputFiles = await getAllFiles(outputDir);
+    expect(outputFiles).toEqual([
+      ":configXXX.md",
+      ":userpage1.md",
+      "テスト.md",
+    ]);
+
+    // Check stats
+    expect(stats.pagesConverted).toBe(3);
     expect(stats.pageErrors).toBe(0);
   });
 
