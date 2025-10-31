@@ -358,10 +358,32 @@ describe("convertToMarkdown", () => {
   });
 
   describe("newly added block plugin exclusion", () => {
-    it("should convert #include to HTML comment", () => {
+    it("should convert #include to HTML comment and link", () => {
       const input = "#include(OtherPage)";
-      const expected = "<!-- #include(OtherPage) -->";
+      const expected =
+        "<!-- #include(OtherPage) -->\n[OtherPage](OtherPage.md)";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #include with parameters to HTML comment and link", () => {
+      const input = "#include(共通ヘッダー,notitle)";
+      const expected =
+        "<!-- #include(共通ヘッダー,notitle) -->\n[共通ヘッダー](共通ヘッダー.md)";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #include with relative path in hierarchical pages", () => {
+      const input = "#include(プロジェクト/共通部分)";
+      const expected =
+        "<!-- #include(プロジェクト/共通部分) -->\n[プロジェクト/共通部分](共通部分.md)";
+      expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+    });
+
+    it("should convert #include to parent page from child page", () => {
+      const input = "#include(共通ページ)";
+      const expected =
+        "<!-- #include(共通ページ) -->\n[共通ページ](../共通ページ.md)";
+      expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
     });
 
     it("should convert #ls to HTML comment", () => {

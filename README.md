@@ -308,7 +308,7 @@ The following block plugins cannot be represented in Markdown and are converted 
 **Content inclusion & display:**
 - `#amazon` - Amazon product information
 - `#aname` - Anchor definition
-- `#include` - Include another page
+- `#include` - Include another page (converted to comment + link)
 - `#includesubmenu` - Include submenu
 
 **Dynamic functionality & forms:**
@@ -366,6 +366,22 @@ All of these are converted to HTML comments like `<!-- #plugin -->`. Parameters 
 Input:  #contents(depth=2)
 Output: <!-- #contents(depth=2) -->
 ```
+
+**Special Handling for `#include`:**
+
+The `#include` plugin is converted to an HTML comment plus a link to the included page:
+
+```
+Input:  #include(CommonHeader)
+Output: <!-- #include(CommonHeader) -->
+        [CommonHeader](CommonHeader.md)
+
+Input:  #include(PageName,notitle)
+Output: <!-- #include(PageName,notitle) -->
+        [PageName](PageName.md)
+```
+
+This allows users to navigate to the included page in the Markdown version while preserving the original syntax in a comment.
 
 **Custom Plugin Exclusion:**
 

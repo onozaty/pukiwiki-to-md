@@ -102,12 +102,19 @@ export const convertToMarkdown = (
         // #vote was converted - add all resulting lines
         convertedLines.push(...voteLines);
       } else {
-        // Convert and output non-table line
-        const converted = convertLine(line, pageName, excludeBlockPlugins);
-        // Skip lines that were removed by converters (e.g., block plugins converted to comments)
-        // But keep original empty lines (where line === converted === "")
-        if (converted !== "" || line === "") {
-          convertedLines.push(converted);
+        // Check for #include plugin (returns multiple lines)
+        const includeLines = convertInclude(line, pageName);
+        if (includeLines) {
+          // #include was converted - add all resulting lines
+          convertedLines.push(...includeLines);
+        } else {
+          // Convert and output non-table line
+          const converted = convertLine(line, pageName, excludeBlockPlugins);
+          // Skip lines that were removed by converters (e.g., block plugins converted to comments)
+          // But keep original empty lines (where line === converted === "")
+          if (converted !== "" || line === "") {
+            convertedLines.push(converted);
+          }
         }
       }
     }
@@ -390,6 +397,39 @@ const parseVoteOption = (
 };
 
 /**
+ * Convert #include plugin to HTML comment + link
+ *
+ * PukiWiki: #include(PageName) or #include(PageName,params)
+ * Output: <!-- #include(...) -->
+ *         [PageName](relativePath)
+ *
+ * @param line - Line to convert
+ * @param currentPage - Current page name for relative path calculation
+ * @returns Array of converted lines (comment + link), or null if not matched
+ */
+const convertInclude = (line: string, currentPage: string): string[] | null => {
+  const trimmed = line.trimEnd();
+
+  // Match #include(PageName) or #include(PageName,params)
+  const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)$/);
+  if (!match || !match[1]) return null;
+
+  const pageName = match[1];
+  const params = match[2];
+
+  // Generate HTML comment with full syntax
+  const comment = params
+    ? `<!-- #include(${pageName},${params}) -->`
+    : `<!-- #include(${pageName}) -->`;
+
+  // Generate link to the included page
+  const relativePath = calculateRelativePath(currentPage, pageName);
+  const link = `[${pageName}](${relativePath})`;
+
+  return [comment, link];
+};
+
+/**
  * Convert unsupported block-level plugins from PukiWiki to HTML comments
  *
  * These plugins cannot be represented in static Markdown, so they are
@@ -401,6 +441,7 @@ const parseVoteOption = (
  * - Navigation plugins (related, recent, online, topicpath, search)
  *
  * Note: Only handles block plugins (#plugin), not inline plugins (&plugin;)
+ * Note: #include is handled by convertInclude() function
  *
  * @param line - Line to convert
  * @param customExcludePlugins - Custom plugins to exclude (from CLI option)
@@ -423,7 +464,7 @@ const convertUnsupportedBlockPlugin = (
     // Content inclusion & display
     "amazon",
     "aname",
-    "include",
+    // "include" - handled by convertInclude() function
     "includesubmenu",
 
     // Dynamic functionality & forms
