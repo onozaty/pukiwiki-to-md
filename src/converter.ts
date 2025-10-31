@@ -577,7 +577,7 @@ const convertLineHeadEscape = (line: string): string => {
 /**
  * Convert horizontal rule from PukiWiki to Markdown
  *
- * PukiWiki: ---- (4 or more hyphens) or #hr
+ * PukiWiki: ---- (4 or more hyphens) or #hr or #hr()
  * Markdown: ---
  *
  * @param line - Line to convert
@@ -591,8 +591,8 @@ const convertHorizontalRule = (line: string): string => {
     return "---";
   }
 
-  // Match #hr plugin
-  if (trimmed === "#hr") {
+  // Match #hr or #hr() plugin
+  if (trimmed === "#hr" || trimmed === "#hr()") {
     return "---";
   }
 
@@ -602,7 +602,7 @@ const convertHorizontalRule = (line: string): string => {
 /**
  * Convert line break plugin from PukiWiki to Markdown
  *
- * PukiWiki: #br
+ * PukiWiki: #br or #br()
  * Markdown: <br>
  *
  * Note: Line-ending whitespace is trimmed before matching
@@ -613,8 +613,8 @@ const convertHorizontalRule = (line: string): string => {
 const convertLineBreak = (line: string): string => {
   const trimmed = line.trimEnd();
 
-  // Match #br plugin
-  if (trimmed === "#br") {
+  // Match #br or #br() plugin
+  if (trimmed === "#br" || trimmed === "#br()") {
     return "<br>";
   }
 
@@ -643,7 +643,7 @@ const convertQuote = (line: string): string => {
 /**
  * Convert inline text formatting from PukiWiki to Markdown
  *
- * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, %%%underline%%%, &br;, text~, &size, &color
+ * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, %%%underline%%%, &br; or &br();, text~, &size, &color
  * Markdown: **bold**, *italic*, ~~strikethrough~~, <u>underline</u>, <br>, text<br>, HTML span tags
  *
  * @param text - Text to convert
@@ -665,8 +665,8 @@ const convertInlineFormat = (text: string): string => {
   // Convert strikethrough (2 %): %%text%% → ~~text~~
   converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
-  // Convert line break: &br; → <br>
-  converted = converted.replace(/&br;/g, "<br>");
+  // Convert line break: &br; or &br(); → <br>
+  converted = converted.replace(/&br(\(\))?;/g, "<br>");
 
   // Convert line-end tilde: text~ → text<br>
   // Only match ~ that is not preceded by ~ (to avoid ~~)
