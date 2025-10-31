@@ -838,6 +838,12 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert underline text", () => {
+      const input = "これは%%%下線%%%です";
+      const expected = "これは<u>下線</u>です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should convert line break", () => {
       const input = "1行目&br;2行目";
       const expected = "1行目<br>2行目";
@@ -845,8 +851,8 @@ describe("convertToMarkdown", () => {
     });
 
     it("should convert multiple formatting in one line", () => {
-      const input = "''太字''と'''イタリック'''と%%取り消し%%";
-      const expected = "**太字**と*イタリック*と~~取り消し~~";
+      const input = "''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%";
+      const expected = "**太字**と*イタリック*と~~取り消し~~と<u>下線</u>";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -862,15 +868,33 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should handle underline in headings", () => {
+      const input = "*%%%下線の見出し%%%";
+      const expected = "# <u>下線の見出し</u>";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should handle inline formatting in lists", () => {
       const input = "-''太字''の項目";
       const expected = "- **太字**の項目";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should handle underline in lists", () => {
+      const input = "-%%%下線%%%の項目";
+      const expected = "- <u>下線</u>の項目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should handle inline formatting in quotes", () => {
       const input = ">''太字''の引用";
       const expected = "> **太字**の引用";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle underline in quotes", () => {
+      const input = ">%%%下線%%%の引用";
+      const expected = "> <u>下線</u>の引用";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 

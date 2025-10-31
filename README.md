@@ -112,6 +112,7 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `''bold''` | `**bold**` |
 | `'''italic'''` | `*italic*` |
 | `%%strikethrough%%` | `~~strikethrough~~` |
+| `%%%underline%%%` | `<u>underline</u>` |
 | `&br;` | `<br>` |
 | `text~` | `text<br>` |
 | `&size(20){text};` | `<span style="font-size: 20px">text</span>` |
