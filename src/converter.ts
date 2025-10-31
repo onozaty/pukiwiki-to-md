@@ -753,7 +753,7 @@ const convertLinks = (text: string, currentPage: string): string => {
   );
 
   // Convert internal links: [[page]] → [page](relativePath)
-  converted = converted.replace(/\[\[([^\]:>]+?)\]\]/g, (_, targetPage) => {
+  converted = converted.replace(/\[\[([^\]>]+?)\]\]/g, (_, targetPage) => {
     const relativePath = calculateRelativePath(currentPage, targetPage);
     return `[${targetPage}](${relativePath})`;
   });
