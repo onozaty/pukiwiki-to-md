@@ -1144,7 +1144,7 @@ const generateMarkdownTable = (
 
   // If no |h header, add empty header row
   if (!hasHeaderRow) {
-    const emptyHeaders = Array(columnCount).fill(" ");
+    const emptyHeaders = Array(columnCount).fill("");
     result.push(`| ${emptyHeaders.join(" | ")} |`);
 
     // Add separator row
@@ -1173,18 +1173,18 @@ const generateMarkdownTable = (
       content = convertLinks(content, pageName);
       content = convertAttachments(content, pageName);
 
-      // Apply bold formatting (both ~ and BOLD:)
-      if (cell.isHeader || cell.isBold) {
+      // Apply bold formatting (both ~ and BOLD:) only if content is not empty
+      if ((cell.isHeader || cell.isBold) && content.trim() !== "") {
         content = `**${content}**`;
       }
 
-      // Apply SIZE, COLOR with span tags (BGCOLOR is not applied)
+      // Apply SIZE, COLOR with span tags (BGCOLOR is not applied) only if content is not empty
       const styles: string[] = [];
       if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
       if (cell.color) styles.push(`color: ${cell.color}`);
       // Note: BGCOLOR is not applied here - it will be added as HTML comment
 
-      if (styles.length > 0) {
+      if (styles.length > 0 && content.trim() !== "") {
         content = `<span style="${styles.join("; ")}">${content}</span>`;
       }
 
