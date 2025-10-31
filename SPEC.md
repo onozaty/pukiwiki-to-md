@@ -613,16 +613,16 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 
 #### 5.9.6 セル装飾
 
-テーブルセル内で以下の装飾プレフィックスを使用できます。これらはHTMLのstyle属性または対応するタグに変換されます。
+テーブルセル内で以下の装飾プレフィックスを使用できます。
 
 **対応する装飾:**
 
-| PukiWiki記法 | 説明 | Markdown形式の出力 | HTML形式の出力 |
-|-------------|------|-------------------|---------------|
-| `BOLD:テキスト` | 太字 | `**テキスト**` | `<strong>テキスト</strong>` |
-| `SIZE(数値):テキスト` | フォントサイズ（px） | `<span style="font-size: 数値px">テキスト</span>` | `<td style="font-size: 数値px">テキスト</td>` |
-| `COLOR(色):テキスト` | 文字色 | `<span style="color: 色">テキスト</span>` | `<td style="color: 色">テキスト</td>` |
-| `BGCOLOR(色):テキスト` | 背景色 | `<span style="background-color: 色">テキスト</span>` | `<td style="background-color: 色">テキスト</td>` |
+| PukiWiki記法 | 説明 | 出力 |
+|-------------|------|------|
+| `BOLD:テキスト` | 太字 | `**テキスト**` |
+| `SIZE(数値):テキスト` | フォントサイズ（px） | `<span style="font-size: 数値px">テキスト</span>` |
+| `COLOR(色):テキスト` | 文字色 | `<span style="color: 色">テキスト</span>` |
+| `BGCOLOR(色):テキスト` | 背景色（コメントとして保存） | `テキスト <!-- BGCOLOR(色) -->` |
 
 **処理順序:**
 
@@ -662,7 +662,7 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 |BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|h
 
 出力:
-| <span style="font-size: 20px; color: red; background-color: yellow">**全部**</span> | 通常 |
+| <span style="font-size: 20px; color: red">**全部**</span> <!-- BGCOLOR(yellow) --> | 通常 |
 | --- | --- |
 ```
 
@@ -677,6 +677,9 @@ PukiWikiの`|h`記法はMarkdownのヘッダー行として変換され、セパ
 ```
 
 **注意事項:**
+- `BGCOLOR`はMarkdownテーブルでセル全体の背景色を指定できないため、HTMLコメントとして保存されます
+- HTMLテーブルに変換するとセル内のMarkdown記法（リンク、太字など）が使用できなくなるため、変換は行いません
+- 必要に応じて、手動でHTMLテーブルに書き換えることができます
 - 色指定は CSS の色名（`red`, `blue` など）や16進数カラーコード（`#FF0000` など）が使用可能です
 - `BOLD:` と個別ヘッダーセル `~` は両方とも太字化しますが、併用も可能です
 - 複数の装飾を組み合わせる場合、上記の処理順序に従って記述することを推奨します

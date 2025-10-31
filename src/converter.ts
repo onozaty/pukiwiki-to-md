@@ -1137,14 +1137,19 @@ const generateMarkdownTable = (
         content = `**${content}**`;
       }
 
-      // Apply SIZE, COLOR, BGCOLOR with span tags
+      // Apply SIZE, COLOR with span tags (BGCOLOR is not applied)
       const styles: string[] = [];
       if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
       if (cell.color) styles.push(`color: ${cell.color}`);
-      if (cell.bgColor) styles.push(`background-color: ${cell.bgColor}`);
+      // Note: BGCOLOR is not applied here - it will be added as HTML comment
 
       if (styles.length > 0) {
         content = `<span style="${styles.join("; ")}">${content}</span>`;
+      }
+
+      // Add BGCOLOR as HTML comment (not converted due to Markdown table limitations)
+      if (cell.bgColor) {
+        content = `${content} <!-- BGCOLOR(${cell.bgColor}) -->`;
       }
 
       return content;
