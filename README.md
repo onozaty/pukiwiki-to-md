@@ -215,8 +215,10 @@ Cells can be formatted with the following prefixes:
 | `BOLD:text` | Bold text | `**text**` |
 | `SIZE(20):text` | Font size (px) | `<span style="font-size: 20px">text</span>` |
 | `COLOR(red):text` | Text color | `<span style="color: red">text</span>` |
-| `BGCOLOR(yellow):text` | Background color | `<span style="background-color: yellow">text</span>` |
+| `BGCOLOR(yellow):text` | Background color (preserved as comment) | `text <!-- BGCOLOR(yellow) -->` |
 | `~text` | Bold (header cell) | `**text**` |
+
+**Note:** `BGCOLOR` is not converted and is preserved as an HTML comment because Markdown tables do not support cell background colors. Converting to HTML tables would prevent Markdown syntax (links, bold, etc.) from working inside cells.
 
 **Example:**
 ```
@@ -227,8 +229,8 @@ Output: | **Name** | <span style="font-size: 20px">Large</span> | <span style="c
 
 Multiple formatting options can be combined:
 ```
-Input:  |BOLD:SIZE(20):COLOR(red):All|Normal|h
-Output: | <span style="font-size: 20px; color: red">**All**</span> | Normal |
+Input:  |BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):All|Normal|h
+Output: | <span style="font-size: 20px; color: red">**All**</span> <!-- BGCOLOR(yellow) --> | Normal |
         | --- | --- |
 ```
 

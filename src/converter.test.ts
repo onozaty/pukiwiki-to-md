@@ -1518,10 +1518,10 @@ describe("convertToMarkdown", () => {
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
-      it("should convert BGCOLOR in HTML table", () => {
+      it("should preserve BGCOLOR as HTML comment", () => {
         const input = "|BGCOLOR(yellow):黄背景|通常|";
         const expected =
-          '|   |   |\n| --- | --- |\n| <span style="background-color: yellow">黄背景</span> | 通常 |';
+          "|   |   |\n| --- | --- |\n| 黄背景 <!-- BGCOLOR(yellow) --> | 通常 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1532,10 +1532,10 @@ describe("convertToMarkdown", () => {
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
-      it("should combine all styles in HTML table", () => {
+      it("should combine styles and preserve BGCOLOR as comment", () => {
         const input = "|BOLD:SIZE(20):COLOR(red):BGCOLOR(yellow):全部|通常|";
         const expected =
-          '|   |   |\n| --- | --- |\n| <span style="font-size: 20px; color: red; background-color: yellow">**全部**</span> | 通常 |';
+          '|   |   |\n| --- | --- |\n| <span style="font-size: 20px; color: red">**全部**</span> <!-- BGCOLOR(yellow) --> | 通常 |';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
@@ -1549,6 +1549,18 @@ describe("convertToMarkdown", () => {
       it("should handle BOLD: with ~ header cell", () => {
         const input = "|BOLD:~太字|通常|h";
         const expected = "| **太字** | 通常 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should preserve BGCOLOR only as comment without other styles", () => {
+        const input = "|BGCOLOR(red):赤背景|";
+        const expected = "|   |\n| --- |\n| 赤背景 <!-- BGCOLOR(red) --> |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should preserve BGCOLOR in header row", () => {
+        const input = "|BGCOLOR(yellow):ヘッダ|h";
+        const expected = "| ヘッダ <!-- BGCOLOR(yellow) --> |\n| --- |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
