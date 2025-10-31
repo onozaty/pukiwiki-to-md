@@ -1083,6 +1083,18 @@ describe("convertToMarkdown", () => {
         const expected = "[ページA](ページA.md)と[ページB](ページB.md)を参照";
         expect(convertToMarkdown(input, "トップページ")).toBe(expected);
       });
+
+      it("should convert internal link with leading colon", () => {
+        const input = "[[:blog/2018-10-09]]";
+        const expected = "[:blog/2018-10-09](:blog/2018-10-09.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert internal link with leading colon and custom text", () => {
+        const input = "[[ブログ記事>:blog/2018-10-09]]";
+        const expected = "[ブログ記事](:blog/2018-10-09.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
     });
 
     describe("external links", () => {
