@@ -602,8 +602,8 @@ const convertQuote = (line: string): string => {
 /**
  * Convert inline text formatting from PukiWiki to Markdown
  *
- * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, &br;, text~, &size, &color
- * Markdown: **bold**, *italic*, ~~strikethrough~~, <br>, text<br>, HTML span tags
+ * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, %%%underline%%%, &br;, text~, &size, &color
+ * Markdown: **bold**, *italic*, ~~strikethrough~~, <u>underline</u>, <br>, text<br>, HTML span tags
  *
  * @param text - Text to convert
  * @returns Converted text
@@ -617,7 +617,11 @@ const convertInlineFormat = (text: string): string => {
   // Convert bold: ''text'' → **text**
   converted = converted.replace(/''([^']+)''/g, "**$1**");
 
-  // Convert strikethrough: %%text%% → ~~text~~
+  // Convert underline (3 %): %%%text%%% → <u>text</u>
+  // Must be processed before strikethrough to avoid matching %%% as %%
+  converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
+
+  // Convert strikethrough (2 %): %%text%% → ~~text~~
   converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
   // Convert line break: &br; → <br>
