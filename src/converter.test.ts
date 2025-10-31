@@ -112,8 +112,20 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert #hr() plugin to horizontal rule", () => {
+      const input = "#hr()";
+      const expected = "---";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should convert #hr with trailing spaces", () => {
       const input = "#hr  ";
+      const expected = "---";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert #hr() with trailing spaces", () => {
+      const input = "#hr()  ";
       const expected = "---";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
@@ -137,8 +149,20 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
+    it("should convert #br() to <br>", () => {
+      const input = "#br()";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
     it("should convert #br with trailing spaces to <br>", () => {
       const input = "#br  ";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #br() with trailing spaces to <br>", () => {
+      const input = "#br()  ";
       const expected = "<br>";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
@@ -151,6 +175,12 @@ describe("convertToMarkdown", () => {
 
     it("should handle multiple #br on separate lines", () => {
       const input = "テキスト1\n#br\n#br\nテキスト2";
+      const expected = "テキスト1\n<br>\n<br>\nテキスト2";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should handle multiple #br() on separate lines", () => {
+      const input = "テキスト1\n#br()\n#br()\nテキスト2";
       const expected = "テキスト1\n<br>\n<br>\nテキスト2";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
@@ -872,15 +902,27 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
-    it("should convert multiple formatting in one line", () => {
-      const input = "''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%";
-      const expected = "**太字**と*イタリック*と~~取り消し~~と<u>下線</u>";
+    it("should convert line break with parentheses", () => {
+      const input = "1行目&br();2行目";
+      const expected = "1行目<br>2行目";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert multiple line breaks", () => {
       const input = "1行目&br;2行目&br;3行目";
       const expected = "1行目<br>2行目<br>3行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple line breaks with parentheses", () => {
+      const input = "1行目&br();2行目&br();3行目";
+      const expected = "1行目<br>2行目<br>3行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple formatting in one line", () => {
+      const input = "''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%";
+      const expected = "**太字**と*イタリック*と~~取り消し~~と<u>下線</u>";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 

@@ -113,7 +113,7 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `'''italic'''` | `*italic*` |
 | `%%strikethrough%%` | `~~strikethrough~~` |
 | `%%%underline%%%` | `<u>underline</u>` |
-| `&br;` | `<br>` |
+| `&br;` or `&br();` | `<br>` |
 | `text~` | `text<br>` |
 | `&size(20){text};` | `<span style="font-size: 20px">text</span>` |
 | `&color(red){text};` | `<span style="color: red">text</span>` |
@@ -246,13 +246,13 @@ Output: | <span style="font-size: 20px; color: red">**All**</span> <!-- BGCOLOR(
 | PukiWiki | Markdown |
 |----------|----------|
 | `----` | `---` |
-| `#hr` | `---` |
+| `#hr` or `#hr()` | `---` |
 
 ### Line Breaks
 
 | PukiWiki | Markdown |
 |----------|----------|
-| `#br` | `<br>` |
+| `#br` or `#br()` | `<br>` |
 
 ### Preformatted Text
 
