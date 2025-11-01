@@ -765,11 +765,14 @@ const convertInlineFormat = (text: string): string => {
 /**
  * Encode a file path for use in Markdown URLs
  *
- * Encodes each path component separately to preserve path separators.
- * Special characters like parentheses are also encoded for better Markdown compatibility.
+ * Encodes only characters that cause issues in Markdown links, while preserving
+ * Unicode characters (Japanese, etc.) for better readability.
+ *
+ * Encoded characters: %, space, (), [], :, ", ,
+ * Preserved characters: Unicode (Japanese, etc.), alphanumerics, -_.~
  *
  * @param filePath - File path to encode (e.g., "../プロジェクト/タスク.md")
- * @returns URL-encoded path (e.g., "../%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88/%E3%82%BF%E3%82%B9%E3%82%AF.md")
+ * @returns Minimally encoded path (e.g., "../プロジェクト/タスク.md")
  */
 const encodePathForMarkdown = (filePath: string): string => {
   // Split by path separator, encode each part (except . and ..), then rejoin
@@ -780,10 +783,17 @@ const encodePathForMarkdown = (filePath: string): string => {
       if (part === "." || part === "..") {
         return part;
       }
-      // Encode other parts, including parentheses for better Markdown compatibility
-      return encodeURIComponent(part)
-        .replace(/\(/g, "%28")
-        .replace(/\)/g, "%29");
+      // Encode only characters that cause issues in Markdown links
+      return part
+        .replace(/%/g, "%25") // % first (avoid double-encoding)
+        .replace(/ /g, "%20") // space
+        .replace(/\(/g, "%28") // left parenthesis
+        .replace(/\)/g, "%29") // right parenthesis
+        .replace(/\[/g, "%5B") // left bracket
+        .replace(/\]/g, "%5D") // right bracket
+        .replace(/:/g, "%3A") // colon
+        .replace(/"/g, "%22") // double quote
+        .replace(/,/g, "%2C"); // comma
     })
     .join("/"); // Use forward slash for URL paths in Markdown
 

@@ -146,14 +146,14 @@ Escapes Markdown special characters (`*`, `-`, `+`, `>`, `#`, `|`) at line start
 
 ### Links
 
-Internal links are converted to relative paths with URL encoding for special characters (Japanese, spaces, parentheses, etc.):
+Internal links are converted to relative paths with minimal URL encoding. Unicode characters (Japanese, etc.) are preserved for readability, while only problematic characters (spaces, parentheses, etc.) are encoded:
 
 | PukiWiki | Markdown |
 |----------|----------|
 | `[[Page]]` | `[Page](Page.md)` |
 | `[[Label>Page]]` | `[Label](Page.md)` |
-| `[[テストページ]]` | `[テストページ](%E3%83%86%E3%82%B9%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8.md)` |
-| `[[File (1)]]` | `[File (1)](%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%20%281%29.md)` |
+| `[[テストページ]]` | `[テストページ](テストページ.md)` |
+| `[[File (1)]]` | `[File (1)](File%20%281%29.md)` |
 | `[[https://example.com]]` | `[https://example.com](https://example.com)` |
 | `[[Label:https://example.com]]` | `[Label](https://example.com)` |
 
@@ -447,11 +447,11 @@ This will convert `#myplugin` and `#customplugin` to HTML comments in addition t
 
 ### File Processing
 
-Attachments are automatically detected and copied to the output directory with sanitized filenames. File references are URL-encoded for compatibility with special characters (Japanese, spaces, parentheses, etc.):
+Attachments are automatically detected and copied to the output directory with sanitized filenames. File references use minimal URL encoding - Unicode characters are preserved for readability while only problematic characters are encoded:
 
 - PukiWiki format: `E38386E382B9E38388_696D6167652E706E67`
 - Converted format: `テスト_attachment_image.png`
-- In Markdown: `![image.png](%E3%83%86%E3%82%B9%E3%83%88_attachment_image.png)`
+- In Markdown: `![image.png](テスト_attachment_image.png)`
 
 **Attachment References:**
 
@@ -460,7 +460,7 @@ The `#ref` and `&ref` plugins support:
 - **Default alt text**: If no alt text is specified, the filename is used
 - **CSV-style parameters**: Filenames with commas can be quoted (`"file, name.png"`)
 - **Other page attachments**: Reference files from other pages (`PageName/file.png`, `../file.png`)
-- **URL encoding**: All file paths are properly encoded
+- **Minimal URL encoding**: Only characters that cause issues in Markdown links are encoded (`%, space, (), [], :, ", ,`)
 
 Examples:
 
