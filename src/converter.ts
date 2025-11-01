@@ -28,6 +28,13 @@ interface TableRow {
 }
 
 /**
+ * Result of block-level conversion
+ */
+type ConversionResult = {
+  lines: string[]; // Empty array means no match
+};
+
+/**
  * Convert PukiWiki content to Markdown
  *
  * @param content - PukiWiki content
@@ -96,27 +103,9 @@ export const convertToMarkdown = (
         inTable = false;
       }
 
-      // Check for #vote plugin first (returns multiple lines)
-      const voteLines = convertVote(line);
-      if (voteLines.length > 1 || voteLines[0] !== line) {
-        // #vote was converted - add all resulting lines
-        convertedLines.push(...voteLines);
-      } else {
-        // Check for #include plugin (returns multiple lines)
-        const includeLines = convertInclude(line, pageName);
-        if (includeLines) {
-          // #include was converted - add all resulting lines
-          convertedLines.push(...includeLines);
-        } else {
-          // Convert and output non-table line
-          const converted = convertLine(line, pageName, excludeBlockPlugins);
-          // Skip lines that were removed by converters (e.g., block plugins converted to comments)
-          // But keep original empty lines (where line === converted === "")
-          if (converted !== "" || line === "") {
-            convertedLines.push(converted);
-          }
-        }
-      }
+      // Convert line (may return multiple lines for some converters)
+      const converted = convertLine(line, pageName, excludeBlockPlugins);
+      convertedLines.push(...converted);
     }
   }
 
@@ -137,46 +126,47 @@ export const convertToMarkdown = (
 /**
  * Convert a single line from PukiWiki to Markdown
  *
+ * Each block converter applies inline processing internally if needed.
+ * Block converters are mutually exclusive - first match wins.
+ *
  * @param line - PukiWiki line
  * @param pageName - Page name (used for relative path calculation and attachments)
  * @param excludeBlockPlugins - Custom block plugins to exclude
- * @returns Converted Markdown line
+ * @returns Converted Markdown lines (may be multiple lines for some converters)
  */
 const convertLine = (
   line: string,
   pageName: string,
   excludeBlockPlugins: string[],
-): string => {
+): string[] => {
   // Apply block-level conversions (mutually exclusive)
   // Try each conversion in order, stop at first match
   const blockConverters = [
-    convertComment,
-    (l: string) => convertUnsupportedBlockPlugin(l, excludeBlockPlugins),
+    (l: string) => convertComment(l, pageName),
+    (l: string) =>
+      convertUnsupportedBlockPlugin(l, excludeBlockPlugins, pageName),
     (l: string) => convertRefBlock(l, pageName),
-    convertLineHeadEscape,
-    convertHorizontalRule,
-    convertLineBreak,
-    convertAlignment,
-    convertHeading,
-    convertList,
-    convertQuote,
+    (l: string) => convertVote(l, pageName),
+    (l: string) => convertInclude(l, pageName),
+    (l: string) => convertLineHeadEscape(l, pageName),
+    (l: string) => convertHorizontalRule(l, pageName),
+    (l: string) => convertLineBreak(l, pageName),
+    (l: string) => convertAlignment(l, pageName),
+    (l: string) => convertHeading(l, pageName),
+    (l: string) => convertList(l, pageName),
+    (l: string) => convertQuote(l, pageName),
   ];
 
-  let converted = line;
   for (const converter of blockConverters) {
     const result = converter(line);
-    if (result !== line) {
-      converted = result;
-      break;
+    if (result.lines.length > 0) {
+      // Matched - converter already applied inline processing if needed
+      return result.lines;
     }
   }
 
-  // Apply inline conversions (can be combined with block-level)
-  converted = convertInlineFormat(converted);
-  converted = convertLinks(converted, pageName);
-  converted = convertAttachments(converted, pageName);
-
-  return converted;
+  // No block converter matched - apply inline processing
+  return [applyInlineConversions(line, pageName)];
 };
 
 /**
@@ -190,18 +180,27 @@ const convertLine = (
  * - HTML div tags prevent Markdown parsing inside
  * - Users can manually add alignment if needed
  *
+ * Inline processing is applied to the content after removing the prefix.
+ *
  * @param line - Line to convert
- * @returns Converted line with alignment prefix removed
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result
  */
-const convertAlignment = (line: string): string => {
+const convertAlignment = (line: string, pageName: string): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match LEFT:, CENTER:, or RIGHT: at line start and remove prefix
   const match = trimmed.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
-  if (!match || !match[1] || match[2] === undefined) return line;
+  if (!match || !match[1] || match[2] === undefined) {
+    return { lines: [] }; // No match
+  }
 
-  const content = match[2];
-  return content;
+  let content = match[2];
+
+  // Apply inline processing to the content
+  content = applyInlineConversions(content, pageName);
+
+  return { lines: [content] };
 };
 
 /**
@@ -213,12 +212,17 @@ const convertAlignment = (line: string): string => {
  * Note: Optional space after asterisks is allowed and ignored
  * Auto-generated anchor IDs [#xxxxx] are removed
  *
+ * Inline processing is applied to the heading text.
+ *
  * @param line - Line to convert
- * @returns Converted line
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result
  */
-const convertHeading = (line: string): string => {
+const convertHeading = (line: string, pageName: string): ConversionResult => {
   const match = line.match(/^(\*{1,3})\s*(.*)$/);
-  if (!match || !match[1] || match[2] === undefined) return line;
+  if (!match || !match[1] || match[2] === undefined) {
+    return { lines: [] }; // No match
+  }
 
   const level = match[1].length;
   let text = match[2];
@@ -226,7 +230,10 @@ const convertHeading = (line: string): string => {
   // Remove auto-generated anchor ID [#xxxxxxxx] at the end
   text = text.replace(/\s*\[#[a-z0-9]+\]\s*$/, "").trim();
 
-  return `${"#".repeat(level)} ${text}`;
+  // Apply inline processing to the heading text
+  text = applyInlineConversions(text, pageName);
+
+  return { lines: [`${"#".repeat(level)} ${text}`] };
 };
 
 /**
@@ -239,10 +246,13 @@ const convertHeading = (line: string): string => {
  *
  * Note: Optional space after - or + is allowed and ignored
  *
+ * Inline processing is applied to the list item text.
+ *
  * @param line - Line to convert
- * @returns Converted line
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result
  */
-const convertList = (line: string): string => {
+const convertList = (line: string, pageName: string): ConversionResult => {
   // Unordered list: max 3 levels, 4th+ hyphen becomes part of content
   // -text, --text, ---text (or ----text becomes level 3 with "-text")
   const unorderedMatch = line.match(/^(-{1,3})(.*)$/);
@@ -251,9 +261,13 @@ const convertList = (line: string): string => {
     const rest = unorderedMatch[2];
 
     // Skip leading space, but keep everything else including extra hyphens
-    const text = rest.replace(/^\s*/, "");
+    let text = rest.replace(/^\s*/, "");
+
+    // Apply inline processing to list item text
+    text = applyInlineConversions(text, pageName);
+
     const indent = " ".repeat((level - 1) * 4);
-    return `${indent}- ${text}`;
+    return { lines: [`${indent}- ${text}`] };
   }
 
   // Ordered list: max 3 levels, 4th+ plus becomes part of content
@@ -263,12 +277,16 @@ const convertList = (line: string): string => {
     const rest = orderedMatch[2];
 
     // Skip leading space, but keep everything else including extra pluses
-    const text = rest.replace(/^\s*/, "");
+    let text = rest.replace(/^\s*/, "");
+
+    // Apply inline processing to list item text
+    text = applyInlineConversions(text, pageName);
+
     const indent = " ".repeat((level - 1) * 4);
-    return `${indent}1. ${text}`;
+    return { lines: [`${indent}1. ${text}`] };
   }
 
-  return line;
+  return { lines: [] }; // No match
 };
 
 /**
@@ -277,19 +295,23 @@ const convertList = (line: string): string => {
  * PukiWiki: //comment
  * Markdown: <!-- comment -->
  *
+ * No inline processing is applied to HTML comments.
+ *
  * @param line - Line to convert
- * @returns Converted line with HTML comment
+ * @param pageName - Current page name (unused, for signature consistency)
+ * @returns Conversion result
  */
-const convertComment = (line: string): string => {
+const convertComment = (line: string, _pageName: string): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match comment line starting with //
   if (trimmed.startsWith("//")) {
     const commentContent = trimmed.substring(2).trimStart();
-    return `<!-- ${commentContent} -->`;
+    // No inline processing for HTML comments
+    return { lines: [`<!-- ${commentContent} -->`] };
   }
 
-  return line;
+  return { lines: [] }; // No match
 };
 
 /**
@@ -304,16 +326,19 @@ const convertComment = (line: string): string => {
  *   | 選択肢2 | 1 |
  *   | 選択肢3 | 3 |
  *
+ * Inline processing is applied to vote option labels.
+ *
  * @param line - Line to convert
- * @returns Converted lines as array (comment + table)
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result (multiple lines)
  */
-const convertVote = (line: string): string[] => {
+const convertVote = (line: string, pageName: string): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #vote plugin - greedy matching, allow text after closing )
   const voteMatch = trimmed.match(/^#vote\((.+)\)/);
   if (!voteMatch || !voteMatch[1]) {
-    return [line];
+    return { lines: [] }; // No match
   }
 
   const result: string[] = [];
@@ -356,16 +381,18 @@ const convertVote = (line: string): string[] => {
     if (parsed) options.push(parsed);
   }
 
-  // Generate table
+  // Generate table with inline processing applied to labels
   if (options.length > 0) {
     result.push("| 選択肢 | 投票数 |");
     result.push("| --- | ---: |");
     for (const option of options) {
-      result.push(`| ${option.label} | ${option.count} |`);
+      // Apply inline processing to the option label
+      const processedLabel = applyInlineConversions(option.label, pageName);
+      result.push(`| ${processedLabel} | ${option.count} |`);
     }
   }
 
-  return result;
+  return { lines: result };
 };
 
 /**
@@ -404,27 +431,34 @@ const parseVoteOption = (
  * Output: <!-- #include(...) -->
  *         [PageName](relativePath)
  *
+ * No inline processing needed (HTML comment + simple link).
+ *
  * @param line - Line to convert
  * @param currentPage - Current page name for relative path calculation
- * @returns Array of converted lines (comment + link), or null if not matched
+ * @returns Conversion result (multiple lines)
  */
-const convertInclude = (line: string, currentPage: string): string[] | null => {
+const convertInclude = (
+  line: string,
+  currentPage: string,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #include(PageName) or #include(PageName,params) - allow text after closing )
   const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)/);
-  if (!match || !match[1]) return null;
+  if (!match || !match[1]) {
+    return { lines: [] }; // No match
+  }
 
   const pageName = match[1];
 
   // Add entire line as HTML comment (including any text after closing ))
   const comment = `<!-- ${trimmed} -->`;
 
-  // Generate link to the included page
-  const relativePath = calculateRelativePath(currentPage, pageName);
+  // Generate link to the included page (no inline processing needed)
+  const relativePath = calculateRelativePath(currentPage, `${pageName}.md`);
   const link = `[${pageName}](${relativePath})`;
 
-  return [comment, link];
+  return { lines: [comment, link] };
 };
 
 /**
@@ -447,8 +481,9 @@ const convertInclude = (line: string, currentPage: string): string[] | null => {
  */
 const convertUnsupportedBlockPlugin = (
   line: string,
-  customExcludePlugins: string[] = [],
-): string => {
+  customExcludePlugins: string[],
+  _pageName: string,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Default block plugins to exclude (all official PukiWiki block plugins except those with custom conversion)
@@ -528,11 +563,12 @@ const convertUnsupportedBlockPlugin = (
     const regex = new RegExp(`^#${plugin}(?:\\(.*\\).*)?$`);
 
     if (regex.test(trimmed)) {
-      return `<!-- ${trimmed} -->`;
+      // No inline processing for HTML comments
+      return { lines: [`<!-- ${trimmed} -->`] };
     }
   }
 
-  return line;
+  return { lines: [] }; // No match
 };
 
 /**
@@ -544,30 +580,42 @@ const convertUnsupportedBlockPlugin = (
  * Escapes Markdown special characters at line start. For non-Markdown
  * special characters (like PukiWiki-specific syntax), just removes the ~.
  *
+ * Inline processing is applied to the text after the escape character.
+ *
  * @param line - Line to convert
- * @returns Converted line with escaped characters or ~ removed
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result
  */
-const convertLineHeadEscape = (line: string): string => {
+const convertLineHeadEscape = (
+  line: string,
+  pageName: string,
+): ConversionResult => {
   // Don't process empty ~ or ~ with only whitespace after it
   const trimmed = line.trimEnd();
-  if (trimmed === "~") return line;
+  if (trimmed === "~") return { lines: [] }; // No match
 
-  if (!line.startsWith("~")) return line;
+  if (!line.startsWith("~")) return { lines: [] }; // No match
 
   const restOfLine = line.substring(1);
-  if (restOfLine.length === 0) return line;
+  if (restOfLine.length === 0) return { lines: [] }; // No match
 
   const firstChar = restOfLine.charAt(0);
   // Markdown characters that need escaping at line start
   const markdownSpecialChars = ["*", "-", "+", ">", "#", "|"];
 
+  let converted: string;
   if (markdownSpecialChars.includes(firstChar)) {
     // Escape with backslash for Markdown special characters
-    return `\\${restOfLine}`;
+    converted = `\\${restOfLine}`;
   } else {
     // Just remove ~ for non-Markdown characters (e.g., PukiWiki syntax)
-    return restOfLine;
+    converted = restOfLine;
   }
+
+  // Apply inline processing to the text
+  converted = applyInlineConversions(converted, pageName);
+
+  return { lines: [converted] };
 };
 
 /**
@@ -576,24 +624,31 @@ const convertLineHeadEscape = (line: string): string => {
  * PukiWiki: ---- (4 or more hyphens) or #hr or #hr()
  * Markdown: ---
  *
+ * No inline processing needed (simple horizontal rule).
+ *
  * @param line - Line to convert
- * @returns Converted line
+ * @param pageName - Current page name (unused, for signature consistency)
+ * @returns Conversion result
  */
-const convertHorizontalRule = (line: string): string => {
+const convertHorizontalRule = (
+  line: string,
+  _pageName: string,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
-  // Match ---- (4 or more hyphens)
-  if (/^-{4,}$/.test(trimmed)) {
-    return "---";
+  // Match ---- (4 or more hyphens), with or without trailing text
+  // Trailing text is discarded (PukiWiki behavior)
+  if (/^-{4,}/.test(trimmed)) {
+    return { lines: ["---"] };
   }
 
   // Match #hr, #hr(), or #hr() with trailing text
   // Does NOT match #hrxxx or #hr text
   if (/^#hr(\(\).*)?$/.test(trimmed)) {
-    return "---";
+    return { lines: ["---"] };
   }
 
-  return line;
+  return { lines: [] }; // No match
 };
 
 /**
@@ -602,21 +657,27 @@ const convertHorizontalRule = (line: string): string => {
  * PukiWiki: #br or #br()
  * Markdown: <br>
  *
+ * No inline processing needed (simple line break tag).
+ *
  * Note: Line-ending whitespace is trimmed before matching
  *
  * @param line - Line to convert
- * @returns Converted line
+ * @param pageName - Current page name (unused, for signature consistency)
+ * @returns Conversion result
  */
-const convertLineBreak = (line: string): string => {
+const convertLineBreak = (
+  line: string,
+  _pageName: string,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #br, #br(), or #br() with trailing text
   // Does NOT match #brxxx or #br text
   if (/^#br(\(\).*)?$/.test(trimmed)) {
-    return "<br>";
+    return { lines: ["<br>"] };
   }
 
-  return line;
+  return { lines: [] }; // No match
 };
 
 /**
@@ -625,17 +686,26 @@ const convertLineBreak = (line: string): string => {
  * PukiWiki: >quote, >>nested quote
  * Markdown: > quote, > > nested quote
  *
+ * Inline processing is applied to the quoted text.
+ *
  * @param line - Line to convert
- * @returns Converted line
+ * @param pageName - Current page name for link resolution
+ * @returns Conversion result
  */
-const convertQuote = (line: string): string => {
+const convertQuote = (line: string, pageName: string): ConversionResult => {
   const match = line.match(/^(>{1,})(.*)$/);
-  if (!match || !match[1] || match[2] === undefined) return line;
+  if (!match || !match[1] || match[2] === undefined) {
+    return { lines: [] }; // No match
+  }
 
   const level = match[1].length;
-  const text = match[2];
+  let text = match[2];
+
+  // Apply inline processing to the quoted text
+  text = applyInlineConversions(text, pageName);
+
   const quotes = "> ".repeat(level);
-  return `${quotes}${text}`;
+  return { lines: [`${quotes}${text}`] };
 };
 
 /**
@@ -721,30 +791,29 @@ const encodePathForMarkdown = (filePath: string): string => {
 };
 
 /**
- * Calculate relative path from current page to target page
+ * Calculate relative path from current page to target file
  *
- * @param currentPage - Current page name (e.g., "プロジェクト/タスク")
- * @param targetPage - Target page name (e.g., "プロジェクト/概要")
- * @returns Relative path to target page (e.g., "概要.md")
+ * This is a generic function that works for any file type (pages, attachments, etc.).
+ * The caller is responsible for adding file extensions if needed.
+ *
+ * @param currentPage - Current page path (e.g., "プロジェクト/タスク")
+ * @param targetFilePath - Target file path (e.g., "共通ページ.md" or "テスト_attachment_image.png")
+ * @returns Relative path from current page directory to target file
  */
 const calculateRelativePath = (
   currentPage: string,
-  targetPage: string,
+  targetFilePath: string,
 ): string => {
   // Get directory of current page
   const currentDir = path.dirname(currentPage);
 
-  // Target file path with .md extension
-  const targetPath = `${targetPage}.md`;
-
-  // Calculate relative path
-  // If currentPage has no directory (root level), just use targetPath
+  // If current page is at root level, just use target path as-is
   if (currentDir === ".") {
-    return targetPath;
+    return targetFilePath;
   }
 
-  const relativePath = path.relative(currentDir, targetPath);
-  return relativePath;
+  // Calculate relative path from current directory to target file
+  return path.relative(currentDir, targetFilePath);
 };
 
 /**
@@ -773,7 +842,10 @@ const convertLinks = (text: string, currentPage: string): string => {
   converted = converted.replace(
     /\[\[([^\]>]+?)>([^\]]+?)\]\]/g,
     (_, linkText, targetPage) => {
-      const relativePath = calculateRelativePath(currentPage, targetPage);
+      const relativePath = calculateRelativePath(
+        currentPage,
+        `${targetPage}.md`,
+      );
       const encodedPath = encodePathForMarkdown(relativePath);
       return `[${linkText}](${encodedPath})`;
     },
@@ -781,7 +853,7 @@ const convertLinks = (text: string, currentPage: string): string => {
 
   // Convert internal links: [[page]] → [page](relativePath)
   converted = converted.replace(/\[\[([^\]>]+?)\]\]/g, (_, targetPage) => {
-    const relativePath = calculateRelativePath(currentPage, targetPage);
+    const relativePath = calculateRelativePath(currentPage, `${targetPage}.md`);
     const encodedPath = encodePathForMarkdown(relativePath);
     return `[${targetPage}](${encodedPath})`;
   });
@@ -952,14 +1024,12 @@ const generateImageTag = (
  *
  * @param filename - File name (may include page path like "PageName/file.png")
  * @param params - Parameter string (optional)
- * @param _attachmentPageName - Page name for attachment file naming (unused, kept for compatibility)
  * @param fullPagePath - Full page path for relative path resolution
  * @returns Converted text
  */
 const convertAttachmentReference = (
   filename: string,
   params: string | undefined,
-  _attachmentPageName: string,
   fullPagePath: string,
 ): string => {
   // Parse filename for page reference (e.g., "PageName/file.png")
@@ -995,15 +1065,11 @@ const convertAttachmentReference = (
   const attachmentFileName = `${targetPageName}_attachment_${actualFilename}`;
 
   // Calculate relative path from current page to attachment file
-  const currentDir = path.dirname(fullPagePath);
   const attachmentPath = path.join(
     path.dirname(targetPagePath),
     attachmentFileName,
   );
-  const relativePath =
-    currentDir === "."
-      ? attachmentPath
-      : path.relative(currentDir, attachmentPath);
+  const relativePath = calculateRelativePath(fullPagePath, attachmentPath);
 
   // Encode the relative path for Markdown URL
   const encodedPath = encodePathForMarkdown(relativePath);
@@ -1094,30 +1160,32 @@ const parseRefContent = (
  * HTML: <img> tags when size specifications are present
  *
  * Following PukiWiki behavior, text after closing ) is ignored.
+ * No additional inline processing is needed as convertAttachmentReference
+ * already produces the final output.
  *
  * @param line - Line to convert
  * @param currentPage - Current page name for attachment file naming
- * @returns Converted line, or original line if not matched
+ * @returns Conversion result
  */
-const convertRefBlock = (line: string, currentPage: string): string => {
+const convertRefBlock = (
+  line: string,
+  currentPage: string,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #ref(...) - greedy matching to handle filenames with parentheses
   // e.g., #ref(file (1).png)
   const match = trimmed.match(/^#ref\((.+)\)/);
   if (!match || !match[1]) {
-    return line;
+    return { lines: [] }; // No match
   }
 
   const { filename, params } = parseRefContent(match[1]);
-  const attachmentPageName = getAttachmentPageName(currentPage);
 
-  return convertAttachmentReference(
-    filename,
-    params,
-    attachmentPageName,
-    currentPage,
-  );
+  const converted = convertAttachmentReference(filename, params, currentPage);
+
+  // Already fully converted, no inline processing needed
+  return { lines: [converted] };
 };
 
 /**
@@ -1138,21 +1206,33 @@ const convertRefBlock = (line: string, currentPage: string): string => {
  * @returns Converted text
  */
 const convertAttachments = (text: string, currentPage: string): string => {
-  const attachmentPageName = getAttachmentPageName(currentPage);
   let result = text;
 
   // Process inline &ref(...); (non-greedy matching)
   // Note: Block-level #ref(...) is handled by convertRefBlock
   result = result.replace(/&ref\((.+?)\);/g, (_match, content) => {
     const { filename, params } = parseRefContent(content);
-    return convertAttachmentReference(
-      filename,
-      params,
-      attachmentPageName,
-      currentPage,
-    );
+    return convertAttachmentReference(filename, params, currentPage);
   });
 
+  return result;
+};
+
+/**
+ * Apply inline conversions (formatting, links, attachments) to text
+ *
+ * This helper function is used by block converters to apply inline processing
+ * to their content when needed.
+ *
+ * @param text - Text to convert
+ * @param pageName - Current page name for link resolution
+ * @returns Text with inline conversions applied
+ */
+const applyInlineConversions = (text: string, pageName: string): string => {
+  let result = text;
+  result = convertInlineFormat(result);
+  result = convertLinks(result, pageName);
+  result = convertAttachments(result, pageName);
   return result;
 };
 
@@ -1344,10 +1424,7 @@ const generateMarkdownTable = (
       let content = cell.content;
 
       // Apply inline conversions (links, attachments, formatting)
-      // Note: Block plugins are not expected in table cells, so we don't pass excludeBlockPlugins
-      content = convertInlineFormat(content);
-      content = convertLinks(content, pageName);
-      content = convertAttachments(content, pageName);
+      content = applyInlineConversions(content, pageName);
 
       // Apply bold formatting (both ~ and BOLD:) only if content is not empty
       if ((cell.isHeader || cell.isBold) && content.trim() !== "") {

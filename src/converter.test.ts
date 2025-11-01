@@ -156,6 +156,20 @@ describe("convertToMarkdown", () => {
       const expected = "        - ";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
+
+    it("should discard trailing text after ---- without inline formatting", () => {
+      const input = "---- ''太字''";
+      // ---- matches and discards trailing text (PukiWiki behavior)
+      const expected = "---";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should discard trailing text after #hr() without inline formatting", () => {
+      const input = "#hr() [[リンク]]";
+      // #hr() matches and discards trailing text (not converted to separate line)
+      const expected = "---";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
   });
 
   describe("line break conversion", () => {
@@ -216,6 +230,20 @@ describe("convertToMarkdown", () => {
       const expected = "テキスト1\n<br>\n<br>\nテキスト2";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
+
+    it("should not match #br with trailing text (no parentheses, becomes normal text)", () => {
+      const input = "#br ''太字''";
+      // #br with text (no parentheses) doesn't match, becomes normal text with inline formatting
+      const expected = "#br **太字**";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should discard trailing text after #br() without inline formatting", () => {
+      const input = "#br() %%%下線%%%";
+      // #br() matches and discards trailing text (not converted to separate line)
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
   });
 
   describe("comment conversion", () => {
@@ -253,6 +281,18 @@ describe("convertToMarkdown", () => {
       const input = "//コメント1\n//コメント2\n//コメント3";
       const expected =
         "<!-- コメント1 -->\n<!-- コメント2 -->\n<!-- コメント3 -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not apply inline formatting in comments (bold)", () => {
+      const input = "//''太字''のコメント";
+      const expected = "<!-- ''太字''のコメント -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not apply inline formatting in comments (underline)", () => {
+      const input = "//%%%下線%%%を含むコメント";
+      const expected = "<!-- %%%下線%%%を含むコメント -->";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
   });
@@ -317,6 +357,20 @@ describe("convertToMarkdown", () => {
     it("should not convert #vote-like text that is not a plugin", () => {
       const input = "これは #vote ではありません";
       const expected = "これは #vote ではありません";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should apply inline formatting in vote options (bold)", () => {
+      const input = "#vote(''太字''[5],通常[3])";
+      const expected =
+        "<!-- #vote(''太字''[5],通常[3]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| **太字** | 5 |\n| 通常 | 3 |";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should apply inline formatting in vote options (link)", () => {
+      const input = "#vote([[リンク]][10])";
+      const expected =
+        "<!-- #vote([[リンク]][10]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| [リンク](%E3%83%AA%E3%83%B3%E3%82%AF.md) | 10 |";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
   });
@@ -424,6 +478,18 @@ describe("convertToMarkdown", () => {
       const expected = "#mycounter";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
+
+    it("should not apply inline formatting in plugin parameters (bold)", () => {
+      const input = "#contents(''太字'')";
+      const expected = "<!-- #contents(''太字'') -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not apply inline formatting in plugin parameters (link)", () => {
+      const input = "#comment([[リンク]])";
+      const expected = "<!-- #comment([[リンク]]) -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
   });
 
   describe("newly added block plugin exclusion", () => {
@@ -459,6 +525,20 @@ describe("convertToMarkdown", () => {
       const input = "#include(Header,notitle)追加テキスト";
       const expected =
         "<!-- #include(Header,notitle)追加テキスト -->\n[Header](Header.md)";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not apply inline formatting in #include page name", () => {
+      const input = "#include(''太字''ページ)";
+      const expected =
+        "<!-- #include(''太字''ページ) -->\n[''太字''ページ](''太字''ページ.md)";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not apply inline formatting in trailing text after #include", () => {
+      const input = "#include(Header) [[リンク]]";
+      const expected =
+        "<!-- #include(Header) [[リンク]] -->\n[Header](Header.md)";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -1550,6 +1630,20 @@ describe("convertToMarkdown", () => {
         const input = "#ref(image.png,300x200)";
         const expected =
           '<img src="%E3%83%86%E3%82%B9%E3%83%88_attachment_image.png" alt="image.png" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should not apply inline formatting in alt text (bold)", () => {
+        const input = "#ref(image.png,''太字''の画像)";
+        const expected =
+          "![''太字''の画像](%E3%83%86%E3%82%B9%E3%83%88_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should not apply inline formatting in alt text (link)", () => {
+        const input = "#ref(document.pdf,[[リンク]]付きテキスト)";
+        const expected =
+          "[[[リンク]]付きテキスト](%E3%83%86%E3%82%B9%E3%83%88_attachment_document.pdf)";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });

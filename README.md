@@ -298,7 +298,7 @@ function() {
 
 ### Vote Plugin
 
-The `#vote` plugin is converted to an HTML comment plus a table showing vote results:
+The `#vote` plugin is converted to an HTML comment plus a table showing vote results. Option labels support inline formatting (bold, links, etc.):
 
 **Input:**
 ```
@@ -313,6 +313,16 @@ The `#vote` plugin is converted to an HTML comment plus a table showing vote res
 | 選択肢1 | 0 |
 | 選択肢2 | 1 |
 | 選択肢3 | 3 |
+```
+
+**With inline formatting:**
+```
+Input:  #vote(''Bold''[5],[[Link]][10])
+Output: <!-- #vote(''Bold''[5],[[Link]][10]) -->
+        | 選択肢 | 投票数 |
+        | --- | ---: |
+        | **Bold** | 5 |
+        | [Link](Link.md) | 10 |
 ```
 
 Note: The voting functionality is lost, and the vote data is preserved as a static snapshot.
