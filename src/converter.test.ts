@@ -680,6 +680,30 @@ describe("convertToMarkdown", () => {
         '<!-- #author("2025-03-14T11:18:07+09:00","default:user","User") -->\n# 見出し\nテキスト';
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
+
+    it("should convert plugin with empty parentheses", () => {
+      const input = "#freeze()";
+      const expected = "<!-- #freeze() -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert plugin with parentheses and text after", () => {
+      const input = "#freeze() 追加テキスト";
+      const expected = "<!-- #freeze() 追加テキスト -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert plugin with parameters and text after closing paren", () => {
+      const input = "#contents(depth=2)これは無視される";
+      const expected = "<!-- #contents(depth=2)これは無視される -->";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert plugin without parentheses but with text after", () => {
+      const input = "#freeze 追加テキスト";
+      const expected = "#freeze 追加テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
   });
 
   describe("list conversion", () => {

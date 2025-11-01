@@ -524,12 +524,10 @@ const convertUnsupportedBlockPlugin = (
   ];
 
   for (const plugin of allPlugins) {
-    // Escape special regex characters in plugin name
-    const escapedPlugin = plugin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
     // Match #plugin or #plugin(...)
-    // The $ ensures we match exact plugin names (not #pluginxxx)
-    const regex = new RegExp(`^#${escapedPlugin}(\\(.*\\))?$`);
+    // Plugin names contain only [a-zA-Z0-9_], so no escaping needed
+    // Parentheses are optional; if present, anything after them is allowed
+    const regex = new RegExp(`^#${plugin}(?:\\(.*\\).*)?$`);
 
     if (regex.test(trimmed)) {
       return `<!-- ${trimmed} -->`;

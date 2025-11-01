@@ -389,6 +389,22 @@ Input:  #contents(depth=2)
 Output: <!-- #contents(depth=2) -->
 ```
 
+**Text After Closing Parenthesis:**
+
+Following PukiWiki behavior, when parentheses are present, any text after the closing `)` is ignored and the entire line is converted to an HTML comment. Without parentheses, the plugin name must be alone on the line.
+
+```
+Input:  #freeze() additional text
+Output: <!-- #freeze() additional text -->
+
+Input:  #contents(depth=2)this is ignored
+Output: <!-- #contents(depth=2)this is ignored -->
+
+Input:  #freeze additional text
+Output: #freeze additional text
+        (not converted, remains as-is)
+```
+
 **Special Handling for `#include`:**
 
 The `#include` plugin is converted to an HTML comment plus a link to the included page:
