@@ -146,12 +146,34 @@ Escapes Markdown special characters (`*`, `-`, `+`, `>`, `#`, `|`) at line start
 
 ### Links
 
+Internal links are converted to relative paths with URL encoding for special characters (Japanese, spaces, parentheses, etc.):
+
 | PukiWiki | Markdown |
 |----------|----------|
 | `[[Page]]` | `[Page](Page.md)` |
 | `[[Label>Page]]` | `[Label](Page.md)` |
+| `[[テストページ]]` | `[テストページ](%E3%83%86%E3%82%B9%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8.md)` |
+| `[[File (1)]]` | `[File (1)](%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%20%281%29.md)` |
 | `[[https://example.com]]` | `[https://example.com](https://example.com)` |
 | `[[Label:https://example.com]]` | `[Label](https://example.com)` |
+
+**Relative Path Resolution:**
+
+Links are converted to relative paths based on the current page location:
+
+```
+Current page: Project/Task
+Link: [[Project/Overview]]
+Output: [Project/Overview](Overview.md)
+
+Current page: TopPage
+Link: [[Project/Task]]
+Output: [Project/Task](Project/Task.md)
+
+Current page: Project/Task
+Link: [[TopPage]]
+Output: [TopPage](../TopPage.md)
+```
 
 ### Tables
 
@@ -399,10 +421,33 @@ This will convert `#myplugin` and `#customplugin` to HTML comments in addition t
 
 ### File Processing
 
-Attachments are automatically detected and copied to the output directory with sanitized filenames:
+Attachments are automatically detected and copied to the output directory with sanitized filenames. File references are URL-encoded for compatibility with special characters (Japanese, spaces, parentheses, etc.):
 
 - PukiWiki format: `E38386E382B9E38388_696D6167652E706E67`
 - Converted format: `テスト_attachment_image.png`
+- In Markdown: `![image.png](%E3%83%86%E3%82%B9%E3%83%88_attachment_image.png)`
+
+**Attachment References:**
+
+The `#ref` and `&ref` plugins support:
+
+- **Default alt text**: If no alt text is specified, the filename is used
+- **CSV-style parameters**: Filenames with commas can be quoted (`"file, name.png"`)
+- **Other page attachments**: Reference files from other pages (`PageName/file.png`, `../file.png`)
+- **URL encoding**: All file paths are properly encoded
+
+Examples:
+
+```
+Input:  #ref(image.png)
+Output: ![image.png](PageName_attachment_image.png)
+
+Input:  #ref("file, name.png",300x200)
+Output: <img src="PageName_attachment_file%2C%20name.png" alt="file, name.png" width="300" height="200">
+
+Input:  #ref(OtherPage/diagram.png)
+Output: ![diagram.png](../OtherPage/OtherPage_attachment_diagram.png)
+```
 
 ### Directory Structure
 

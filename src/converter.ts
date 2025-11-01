@@ -695,6 +695,34 @@ const convertInlineFormat = (text: string): string => {
 };
 
 /**
+ * Encode a file path for use in Markdown URLs
+ *
+ * Encodes each path component separately to preserve path separators.
+ * Special characters like parentheses are also encoded for better Markdown compatibility.
+ *
+ * @param filePath - File path to encode (e.g., "../プロジェクト/タスク.md")
+ * @returns URL-encoded path (e.g., "../%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88/%E3%82%BF%E3%82%B9%E3%82%AF.md")
+ */
+const encodePathForMarkdown = (filePath: string): string => {
+  // Split by path separator, encode each part (except . and ..), then rejoin
+  const pathParts = filePath.split(path.sep);
+  const encodedPath = pathParts
+    .map((part) => {
+      // Don't encode relative path markers
+      if (part === "." || part === "..") {
+        return part;
+      }
+      // Encode other parts, including parentheses for better Markdown compatibility
+      return encodeURIComponent(part)
+        .replace(/\(/g, "%28")
+        .replace(/\)/g, "%29");
+    })
+    .join("/"); // Use forward slash for URL paths in Markdown
+
+  return encodedPath;
+};
+
+/**
  * Calculate relative path from current page to target page
  *
  * @param currentPage - Current page name (e.g., "プロジェクト/タスク")
@@ -748,14 +776,16 @@ const convertLinks = (text: string, currentPage: string): string => {
     /\[\[([^\]>]+?)>([^\]]+?)\]\]/g,
     (_, linkText, targetPage) => {
       const relativePath = calculateRelativePath(currentPage, targetPage);
-      return `[${linkText}](${relativePath})`;
+      const encodedPath = encodePathForMarkdown(relativePath);
+      return `[${linkText}](${encodedPath})`;
     },
   );
 
   // Convert internal links: [[page]] → [page](relativePath)
   converted = converted.replace(/\[\[([^\]>]+?)\]\]/g, (_, targetPage) => {
     const relativePath = calculateRelativePath(currentPage, targetPage);
-    return `[${targetPage}](${relativePath})`;
+    const encodedPath = encodePathForMarkdown(relativePath);
+    return `[${targetPage}](${encodedPath})`;
   });
 
   return converted;
@@ -922,34 +952,140 @@ const generateImageTag = (
 /**
  * Convert a single attachment reference to Markdown/HTML
  *
- * @param filename - File name
+ * @param filename - File name (may include page path like "PageName/file.png")
  * @param params - Parameter string (optional)
- * @param attachmentPageName - Page name for attachment file naming
+ * @param _attachmentPageName - Page name for attachment file naming (unused, kept for compatibility)
+ * @param fullPagePath - Full page path for relative path resolution
  * @returns Converted text
  */
 const convertAttachmentReference = (
   filename: string,
   params: string | undefined,
-  attachmentPageName: string,
+  _attachmentPageName: string,
+  fullPagePath: string,
 ): string => {
-  const attachmentFileName = `${attachmentPageName}_attachment_${filename}`;
-  const { altText, size } = parseRefParameters(params || "");
+  // Parse filename for page reference (e.g., "PageName/file.png")
+  // Supports: OtherPage/file.png, ../ParentPage/file.png, ./SamePage/file.png
+  let targetPagePath = fullPagePath; // Full path to the target page
+  let actualFilename = filename;
 
-  if (isImageFile(filename)) {
+  const slashMatch = filename.match(/^(.+)\/([^/]+)$/);
+  if (slashMatch && slashMatch[1] && slashMatch[2]) {
+    const pagePart = slashMatch[1];
+    actualFilename = slashMatch[2];
+
+    // Handle relative paths
+    if (pagePart === ".") {
+      // "./file.png" - same page (no change)
+      targetPagePath = fullPagePath;
+    } else if (pagePart === "..") {
+      // "../file.png" - parent page
+      const parentMatch = fullPagePath.match(/^(.+)\//);
+      targetPagePath =
+        parentMatch && parentMatch[1] ? parentMatch[1] : fullPagePath;
+    } else {
+      // "OtherPage/file.png" or "Parent/Child/file.png"
+      // This is an absolute reference from the root
+      targetPagePath = pagePart;
+    }
+  }
+
+  // Get the attachment page name (last component) for the file naming
+  const targetPageName = getAttachmentPageName(targetPagePath);
+
+  // Build the attachment file name
+  const attachmentFileName = `${targetPageName}_attachment_${actualFilename}`;
+
+  // Calculate relative path from current page to attachment file
+  const currentDir = path.dirname(fullPagePath);
+  const attachmentPath = path.join(
+    path.dirname(targetPagePath),
+    attachmentFileName,
+  );
+  const relativePath =
+    currentDir === "."
+      ? attachmentPath
+      : path.relative(currentDir, attachmentPath);
+
+  // Encode the relative path for Markdown URL
+  const encodedPath = encodePathForMarkdown(relativePath);
+
+  const { altText, size } = parseRefParameters(params || "");
+  // Use actual filename (without page path) as default alt text if not specified
+  const effectiveAltText = altText || actualFilename;
+
+  // Check if it's an image file based on actual filename (not the path)
+  if (isImageFile(actualFilename)) {
     // If size specification exists, use HTML img tag
     if (size) {
-      return generateImageTag(attachmentFileName, altText, size);
+      return generateImageTag(encodedPath, effectiveAltText, size);
     }
     // Otherwise use Markdown format
-    return altText
-      ? `![${altText}](${attachmentFileName})`
-      : `![](${attachmentFileName})`;
+    return `![${effectiveAltText}](${encodedPath})`;
   } else {
     // Non-image files always use link format (size is ignored)
-    return altText
-      ? `[${altText}](${attachmentFileName})`
-      : `[${filename}](${attachmentFileName})`;
+    return `[${effectiveAltText}](${encodedPath})`;
   }
+};
+
+/**
+ * Parse ref plugin content in CSV format (like PukiWiki's csv_explode)
+ *
+ * Supports:
+ * - Simple: file.png,300x200,説明
+ * - Quoted: "file (1).png",300x200
+ * - With comma: "file, name.png",left
+ * - Escaped quotes: "file ""quoted"".png"
+ *
+ * @param content - Content string from ref plugin (entire content inside parentheses)
+ * @returns Object with filename and optional params string
+ */
+const parseRefContent = (
+  content: string,
+): { filename: string; params: string | undefined } => {
+  const parts: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < content.length) {
+    const char = content[i];
+
+    if (char === '"') {
+      if (inQuotes && content[i + 1] === '"') {
+        // Escaped double quote: ""
+        current += '"';
+        i += 2;
+        continue;
+      } else {
+        // Toggle quote mode
+        inQuotes = !inQuotes;
+        i++;
+        continue;
+      }
+    }
+
+    if (char === "," && !inQuotes) {
+      // Split by comma (only outside quotes)
+      parts.push(current);
+      current = "";
+      i++;
+      continue;
+    }
+
+    current += char;
+    i++;
+  }
+
+  // Add last part
+  if (current) {
+    parts.push(current);
+  }
+
+  const filename = parts[0] || "";
+  const params = parts.length > 1 ? parts.slice(1).join(",") : undefined;
+
+  return { filename, params };
 };
 
 /**
@@ -969,15 +1105,31 @@ const convertAttachmentReference = (
  */
 const convertAttachments = (text: string, currentPage: string): string => {
   const attachmentPageName = getAttachmentPageName(currentPage);
+  let result = text;
 
-  // Convert both #ref and &ref with unified pattern
-  // Matches: #ref(file,params...) or &ref(file,params...);
-  // The optional semicolon at the end handles both syntaxes
-  return text.replace(
-    /[#&]ref\(([^,)]+?)(?:,([^)]+?))?\);?/g,
-    (_, filename, params) =>
-      convertAttachmentReference(filename, params, attachmentPageName),
-  );
+  // 1. Process inline &ref(...); first (non-greedy matching)
+  result = result.replace(/&ref\((.+?)\);/g, (_match, content) => {
+    const { filename, params } = parseRefContent(content);
+    return convertAttachmentReference(
+      filename,
+      params,
+      attachmentPageName,
+      currentPage,
+    );
+  });
+
+  // 2. Process block #ref(...) (greedy matching - to last paren)
+  result = result.replace(/#ref\((.+)\)/g, (_match, content) => {
+    const { filename, params } = parseRefContent(content);
+    return convertAttachmentReference(
+      filename,
+      params,
+      attachmentPageName,
+      currentPage,
+    );
+  });
+
+  return result;
 };
 
 /**
