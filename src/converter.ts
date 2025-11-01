@@ -152,6 +152,7 @@ const convertLine = (
   const blockConverters = [
     convertComment,
     (l: string) => convertUnsupportedBlockPlugin(l, excludeBlockPlugins),
+    (l: string) => convertRefBlock(l, pageName),
     convertLineHeadEscape,
     convertHorizontalRule,
     convertLineBreak,
@@ -309,15 +310,15 @@ const convertComment = (line: string): string => {
 const convertVote = (line: string): string[] => {
   const trimmed = line.trimEnd();
 
-  // Match #vote plugin
-  const voteMatch = trimmed.match(/^#vote\((.+)\)$/);
+  // Match #vote plugin - greedy matching, allow text after closing )
+  const voteMatch = trimmed.match(/^#vote\((.+)\)/);
   if (!voteMatch || !voteMatch[1]) {
     return [line];
   }
 
   const result: string[] = [];
 
-  // Add original as HTML comment
+  // Add entire line as HTML comment (including any text after closing ))
   result.push(`<!-- ${trimmed} -->`);
 
   // Parse vote options: 選択肢1[0],選択肢2[1],選択肢3[3]
@@ -410,17 +411,14 @@ const parseVoteOption = (
 const convertInclude = (line: string, currentPage: string): string[] | null => {
   const trimmed = line.trimEnd();
 
-  // Match #include(PageName) or #include(PageName,params)
-  const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)$/);
+  // Match #include(PageName) or #include(PageName,params) - allow text after closing )
+  const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)/);
   if (!match || !match[1]) return null;
 
   const pageName = match[1];
-  const params = match[2];
 
-  // Generate HTML comment with full syntax
-  const comment = params
-    ? `<!-- #include(${pageName},${params}) -->`
-    : `<!-- #include(${pageName}) -->`;
+  // Add entire line as HTML comment (including any text after closing ))
+  const comment = `<!-- ${trimmed} -->`;
 
   // Generate link to the included page
   const relativePath = calculateRelativePath(currentPage, pageName);
@@ -589,8 +587,9 @@ const convertHorizontalRule = (line: string): string => {
     return "---";
   }
 
-  // Match #hr or #hr() plugin
-  if (trimmed === "#hr" || trimmed === "#hr()") {
+  // Match #hr, #hr(), or #hr() with trailing text
+  // Does NOT match #hrxxx or #hr text
+  if (/^#hr(\(\).*)?$/.test(trimmed)) {
     return "---";
   }
 
@@ -611,8 +610,9 @@ const convertHorizontalRule = (line: string): string => {
 const convertLineBreak = (line: string): string => {
   const trimmed = line.trimEnd();
 
-  // Match #br or #br() plugin
-  if (trimmed === "#br" || trimmed === "#br()") {
+  // Match #br, #br(), or #br() with trailing text
+  // Does NOT match #brxxx or #br text
+  if (/^#br(\(\).*)?$/.test(trimmed)) {
     return "<br>";
   }
 
@@ -1087,11 +1087,47 @@ const parseRefContent = (
 };
 
 /**
- * Convert attachment references from PukiWiki to Markdown
+ * Convert #ref block plugin from PukiWiki to Markdown
  *
- * PukiWiki: #ref(file), #ref(file,params...), &ref(file);, &ref(file,params...);
+ * PukiWiki: #ref(file), #ref(file,params...)
  * Markdown: ![alt](file) for images, [alt](file) for other files
  * HTML: <img> tags when size specifications are present
+ *
+ * Following PukiWiki behavior, text after closing ) is ignored.
+ *
+ * @param line - Line to convert
+ * @param currentPage - Current page name for attachment file naming
+ * @returns Converted line, or original line if not matched
+ */
+const convertRefBlock = (line: string, currentPage: string): string => {
+  const trimmed = line.trimEnd();
+
+  // Match #ref(...) - greedy matching to handle filenames with parentheses
+  // e.g., #ref(file (1).png)
+  const match = trimmed.match(/^#ref\((.+)\)/);
+  if (!match || !match[1]) {
+    return line;
+  }
+
+  const { filename, params } = parseRefContent(match[1]);
+  const attachmentPageName = getAttachmentPageName(currentPage);
+
+  return convertAttachmentReference(
+    filename,
+    params,
+    attachmentPageName,
+    currentPage,
+  );
+};
+
+/**
+ * Convert attachment references from PukiWiki to Markdown
+ *
+ * PukiWiki: &ref(file);, &ref(file,params...);
+ * Markdown: ![alt](file) for images, [alt](file) for other files
+ * HTML: <img> tags when size specifications are present
+ *
+ * Note: #ref (block plugin) is handled by convertRefBlock() function
  *
  * Parameters can include keywords (left, center, etc.), size specs (300x200, 50%, etc.),
  * and text parameters. Only text parameters are used as alt text.
@@ -1105,19 +1141,9 @@ const convertAttachments = (text: string, currentPage: string): string => {
   const attachmentPageName = getAttachmentPageName(currentPage);
   let result = text;
 
-  // 1. Process inline &ref(...); first (non-greedy matching)
+  // Process inline &ref(...); (non-greedy matching)
+  // Note: Block-level #ref(...) is handled by convertRefBlock
   result = result.replace(/&ref\((.+?)\);/g, (_match, content) => {
-    const { filename, params } = parseRefContent(content);
-    return convertAttachmentReference(
-      filename,
-      params,
-      attachmentPageName,
-      currentPage,
-    );
-  });
-
-  // 2. Process block #ref(...) (greedy matching - to last paren)
-  result = result.replace(/#ref\((.+)\)/g, (_match, content) => {
     const { filename, params } = parseRefContent(content);
     return convertAttachmentReference(
       filename,

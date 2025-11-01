@@ -130,6 +130,22 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert #hr() with trailing text", () => {
+      const input = "#hr() 追加テキスト";
+      const expected = "---";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not convert #hr with text (no parentheses)", () => {
+      const input = "#hr 追加テキスト";
+      expect(convertToMarkdown(input, "テストページ")).toBe(input);
+    });
+
+    it("should not convert similar plugin names like #hrxxx", () => {
+      const input = "#hrxxx";
+      expect(convertToMarkdown(input, "テストページ")).toBe(input);
+    });
+
     it("should not convert dashes in text", () => {
       const input = "This is a --- test";
       expect(convertToMarkdown(input, "テストページ")).toBe(input);
@@ -165,6 +181,22 @@ describe("convertToMarkdown", () => {
       const input = "#br()  ";
       const expected = "<br>";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #br() with trailing text", () => {
+      const input = "#br() 追加テキスト";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should not convert #br with text (no parentheses)", () => {
+      const input = "#br 追加テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(input);
+    });
+
+    it("should not convert similar plugin names like #brxxx", () => {
+      const input = "#brxxx";
+      expect(convertToMarkdown(input, "テスト")).toBe(input);
     });
 
     it("should treat #br with leading spaces as preformatted", () => {
@@ -272,6 +304,13 @@ describe("convertToMarkdown", () => {
       const input = "*見出し\n#vote(はい[5],いいえ[2])\n通常テキスト";
       const expected =
         "# 見出し\n<!-- #vote(はい[5],いいえ[2]) -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| はい | 5 |\n| いいえ | 2 |\n通常テキスト";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert #vote with trailing text", () => {
+      const input = "#vote(はい[5],いいえ[2])追加テキスト";
+      const expected =
+        "<!-- #vote(はい[5],いいえ[2])追加テキスト -->\n| 選択肢 | 投票数 |\n| --- | ---: |\n| はい | 5 |\n| いいえ | 2 |";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -414,6 +453,13 @@ describe("convertToMarkdown", () => {
       const expected =
         "<!-- #include(共通ページ) -->\n[共通ページ](../共通ページ.md)";
       expect(convertToMarkdown(input, "プロジェクト/タスク")).toBe(expected);
+    });
+
+    it("should convert #include with trailing text", () => {
+      const input = "#include(Header,notitle)追加テキスト";
+      const expected =
+        "<!-- #include(Header,notitle)追加テキスト -->\n[Header](Header.md)";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
     it("should convert #ls to HTML comment", () => {
@@ -1283,6 +1329,20 @@ describe("convertToMarkdown", () => {
       it("should handle other page non-image file", () => {
         const input = "#ref(OtherPage/document.pdf,資料)";
         const expected = "[資料](OtherPage_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with trailing text", () => {
+        const input = "#ref(image.png)追加テキスト";
+        const expected =
+          "![image.png](%E3%83%86%E3%82%B9%E3%83%88_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with parentheses in filename and trailing text", () => {
+        const input = "#ref(file (1).png)追加テキスト";
+        const expected =
+          "![file (1).png](%E3%83%86%E3%82%B9%E3%83%88_attachment_file%20%281%29.png)";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
