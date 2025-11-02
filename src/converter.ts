@@ -29,24 +29,41 @@ interface TableRow {
 
 /**
  * Result of block-level conversion
+ * Discriminated union to distinguish between matched and unmatched cases
  */
-type ConversionResult = {
-  lines: string[]; // Empty array means no match
-};
+type ConversionResult =
+  | { matched: true; lines: string[] } // Matched (lines may be empty if stripped)
+  | { matched: false }; // Not matched
+
+/**
+ * Conversion options
+ */
+export interface ConversionOptions {
+  /** Remove all HTML comments from output */
+  stripComments: boolean;
+  /** Custom block plugins to exclude */
+  excludeBlockPlugins: string[];
+}
 
 /**
  * Convert PukiWiki content to Markdown
  *
  * @param content - PukiWiki content
  * @param pageName - Page name (used for attachment references)
- * @param excludeBlockPlugins - Custom block plugins to exclude (optional)
+ * @param options - Conversion options
  * @returns Converted Markdown content
  */
 export const convertToMarkdown = (
   content: string,
   pageName: string,
-  excludeBlockPlugins: string[] = [],
+  options: Partial<ConversionOptions> = {},
 ): string => {
+  // Apply defaults
+  const opts: ConversionOptions = {
+    stripComments: false,
+    excludeBlockPlugins: [],
+    ...options,
+  };
   const lines = content.split("\n");
   const convertedLines: string[] = [];
   let tableBuffer: TableRow[] = [];
@@ -62,7 +79,11 @@ export const convertToMarkdown = (
       // Preformatted text line detected
       if (inTable) {
         // End of table - convert and output buffered table
-        const markdownTable = generateMarkdownTable(tableBuffer, pageName);
+        const markdownTable = generateMarkdownTable(
+          tableBuffer,
+          pageName,
+          opts,
+        );
         convertedLines.push(...markdownTable);
         tableBuffer = [];
         inTable = false;
@@ -97,14 +118,18 @@ export const convertToMarkdown = (
 
       if (inTable) {
         // End of table - convert and output buffered table
-        const markdownTable = generateMarkdownTable(tableBuffer, pageName);
+        const markdownTable = generateMarkdownTable(
+          tableBuffer,
+          pageName,
+          opts,
+        );
         convertedLines.push(...markdownTable);
         tableBuffer = [];
         inTable = false;
       }
 
       // Convert line (may return multiple lines for some converters)
-      const converted = convertLine(line, pageName, excludeBlockPlugins);
+      const converted = convertLine(line, pageName, opts);
       convertedLines.push(...converted);
     }
   }
@@ -116,7 +141,7 @@ export const convertToMarkdown = (
   }
 
   if (inTable && tableBuffer.length > 0) {
-    const markdownTable = generateMarkdownTable(tableBuffer, pageName);
+    const markdownTable = generateMarkdownTable(tableBuffer, pageName, opts);
     convertedLines.push(...markdownTable);
   }
 
@@ -131,23 +156,22 @@ export const convertToMarkdown = (
  *
  * @param line - PukiWiki line
  * @param pageName - Page name (used for relative path calculation and attachments)
- * @param excludeBlockPlugins - Custom block plugins to exclude
+ * @param options - Conversion options
  * @returns Converted Markdown lines (may be multiple lines for some converters)
  */
 const convertLine = (
   line: string,
   pageName: string,
-  excludeBlockPlugins: string[],
+  options: ConversionOptions,
 ): string[] => {
   // Apply block-level conversions (mutually exclusive)
   // Try each conversion in order, stop at first match
   const blockConverters = [
-    (l: string) => convertComment(l, pageName),
-    (l: string) =>
-      convertUnsupportedBlockPlugin(l, excludeBlockPlugins, pageName),
+    (l: string) => convertComment(l, pageName, options),
+    (l: string) => convertUnsupportedBlockPlugin(l, pageName, options),
     (l: string) => convertRefBlock(l, pageName),
-    (l: string) => convertVote(l, pageName),
-    (l: string) => convertInclude(l, pageName),
+    (l: string) => convertVote(l, pageName, options),
+    (l: string) => convertInclude(l, pageName, options),
     (l: string) => convertLineHeadEscape(l, pageName),
     (l: string) => convertHorizontalRule(l, pageName),
     (l: string) => convertLineBreak(l, pageName),
@@ -159,8 +183,9 @@ const convertLine = (
 
   for (const converter of blockConverters) {
     const result = converter(line);
-    if (result.lines.length > 0) {
+    if (result.matched) {
       // Matched - converter already applied inline processing if needed
+      // Return lines even if empty (e.g., when stripComments removes the line)
       return result.lines;
     }
   }
@@ -192,7 +217,7 @@ const convertAlignment = (line: string, pageName: string): ConversionResult => {
   // Match LEFT:, CENTER:, or RIGHT: at line start and remove prefix
   const match = trimmed.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
   if (!match || !match[1] || match[2] === undefined) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   let content = match[2];
@@ -200,7 +225,7 @@ const convertAlignment = (line: string, pageName: string): ConversionResult => {
   // Apply inline processing to the content
   content = applyInlineConversions(content, pageName);
 
-  return { lines: [content] };
+  return { matched: true, lines: [content] };
 };
 
 /**
@@ -221,7 +246,7 @@ const convertAlignment = (line: string, pageName: string): ConversionResult => {
 const convertHeading = (line: string, pageName: string): ConversionResult => {
   const match = line.match(/^(\*{1,3})\s*(.*)$/);
   if (!match || !match[1] || match[2] === undefined) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   const level = match[1].length;
@@ -233,7 +258,7 @@ const convertHeading = (line: string, pageName: string): ConversionResult => {
   // Apply inline processing to the heading text
   text = applyInlineConversions(text, pageName);
 
-  return { lines: [`${"#".repeat(level)} ${text}`] };
+  return { matched: true, lines: [`${"#".repeat(level)} ${text}`] };
 };
 
 /**
@@ -267,7 +292,7 @@ const convertList = (line: string, pageName: string): ConversionResult => {
     text = applyInlineConversions(text, pageName);
 
     const indent = " ".repeat((level - 1) * 4);
-    return { lines: [`${indent}- ${text}`] };
+    return { matched: true, lines: [`${indent}- ${text}`] };
   }
 
   // Ordered list: max 3 levels, 4th+ plus becomes part of content
@@ -283,35 +308,45 @@ const convertList = (line: string, pageName: string): ConversionResult => {
     text = applyInlineConversions(text, pageName);
 
     const indent = " ".repeat((level - 1) * 4);
-    return { lines: [`${indent}1. ${text}`] };
+    return { matched: true, lines: [`${indent}1. ${text}`] };
   }
 
-  return { lines: [] }; // No match
+  return { matched: false };
 };
 
 /**
  * Convert comment from PukiWiki to Markdown
  *
  * PukiWiki: //comment
- * Markdown: <!-- comment -->
+ * Markdown: <!-- comment --> (or removed if stripComments is true)
  *
  * No inline processing is applied to HTML comments.
  *
  * @param line - Line to convert
  * @param pageName - Current page name (unused, for signature consistency)
+ * @param options - Conversion options
  * @returns Conversion result
  */
-const convertComment = (line: string, _pageName: string): ConversionResult => {
+const convertComment = (
+  line: string,
+  _pageName: string,
+  options: ConversionOptions,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match comment line starting with //
   if (trimmed.startsWith("//")) {
+    // If stripComments is enabled, remove the line entirely
+    if (options.stripComments) {
+      return { matched: true, lines: [] };
+    }
+
     const commentContent = trimmed.substring(2).trimStart();
     // No inline processing for HTML comments
-    return { lines: [`<!-- ${commentContent} -->`] };
+    return { matched: true, lines: [`<!-- ${commentContent} -->`] };
   }
 
-  return { lines: [] }; // No match
+  return { matched: false };
 };
 
 /**
@@ -319,7 +354,7 @@ const convertComment = (line: string, _pageName: string): ConversionResult => {
  *
  * PukiWiki: #vote(選択肢1[0],選択肢2[1],選択肢3[3])
  * Markdown:
- *   <!-- #vote(選択肢1[0],選択肢2[1],選択肢3[3]) -->
+ *   <!-- #vote(選択肢1[0],選択肢2[1],選択肢3[3]) --> (omitted if stripComments is true)
  *   | 選択肢 | 投票数 |
  *   | --- | ---: |
  *   | 選択肢1 | 0 |
@@ -330,25 +365,32 @@ const convertComment = (line: string, _pageName: string): ConversionResult => {
  *
  * @param line - Line to convert
  * @param pageName - Current page name for link resolution
+ * @param options - Conversion options
  * @returns Conversion result (multiple lines)
  */
-const convertVote = (line: string, pageName: string): ConversionResult => {
+const convertVote = (
+  line: string,
+  pageName: string,
+  options: ConversionOptions,
+): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #vote plugin - greedy matching, allow text after closing )
   const voteMatch = trimmed.match(/^#vote\((.+)\)/);
   if (!voteMatch || !voteMatch[1]) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   const result: string[] = [];
 
-  // Add entire line as HTML comment (including any text after closing ))
-  result.push(`<!-- ${trimmed} -->`);
+  // Add entire line as HTML comment (including any text after closing )) unless stripComments is enabled
+  if (!options.stripComments) {
+    result.push(`<!-- ${trimmed} -->`);
+  }
 
   // Parse vote options: 選択肢1[0],選択肢2[1],選択肢3[3]
   const optionsText = voteMatch[1];
-  const options: Array<{ label: string; count: number }> = [];
+  const voteOptions: Array<{ label: string; count: number }> = [];
 
   // Split by comma, but handle nested brackets carefully
   let currentOption = "";
@@ -367,7 +409,7 @@ const convertVote = (line: string, pageName: string): ConversionResult => {
       // Found a separator at depth 0
       if (currentOption.trim()) {
         const parsed = parseVoteOption(currentOption.trim());
-        if (parsed) options.push(parsed);
+        if (parsed) voteOptions.push(parsed);
       }
       currentOption = "";
     } else {
@@ -378,21 +420,21 @@ const convertVote = (line: string, pageName: string): ConversionResult => {
   // Don't forget the last option
   if (currentOption.trim()) {
     const parsed = parseVoteOption(currentOption.trim());
-    if (parsed) options.push(parsed);
+    if (parsed) voteOptions.push(parsed);
   }
 
   // Generate table with inline processing applied to labels
-  if (options.length > 0) {
+  if (voteOptions.length > 0) {
     result.push("| 選択肢 | 投票数 |");
     result.push("| --- | ---: |");
-    for (const option of options) {
+    for (const voteOption of voteOptions) {
       // Apply inline processing to the option label
-      const processedLabel = applyInlineConversions(option.label, pageName);
-      result.push(`| ${processedLabel} | ${option.count} |`);
+      const processedLabel = applyInlineConversions(voteOption.label, pageName);
+      result.push(`| ${processedLabel} | ${voteOption.count} |`);
     }
   }
 
-  return { lines: result };
+  return { matched: true, lines: result };
 };
 
 /**
@@ -428,44 +470,50 @@ const parseVoteOption = (
  * Convert #include plugin to HTML comment + link
  *
  * PukiWiki: #include(PageName) or #include(PageName,params)
- * Output: <!-- #include(...) -->
+ * Output: <!-- #include(...) --> (omitted if stripComments is true)
  *         [PageName](relativePath)
  *
  * No inline processing needed (HTML comment + simple link).
  *
  * @param line - Line to convert
  * @param currentPage - Current page name for relative path calculation
+ * @param options - Conversion options
  * @returns Conversion result (multiple lines)
  */
 const convertInclude = (
   line: string,
   currentPage: string,
+  options: ConversionOptions,
 ): ConversionResult => {
   const trimmed = line.trimEnd();
 
   // Match #include(PageName) or #include(PageName,params) - allow text after closing )
   const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)/);
   if (!match || !match[1]) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   const pageName = match[1];
+  const result: string[] = [];
 
-  // Add entire line as HTML comment (including any text after closing ))
-  const comment = `<!-- ${trimmed} -->`;
+  // Add entire line as HTML comment (including any text after closing )) unless stripComments is enabled
+  if (!options.stripComments) {
+    result.push(`<!-- ${trimmed} -->`);
+  }
 
   // Generate link to the included page (no inline processing needed)
   const relativePath = calculateRelativePath(currentPage, `${pageName}.md`);
   const link = `[${pageName}](${relativePath})`;
+  result.push(link);
 
-  return { lines: [comment, link] };
+  return { matched: true, lines: result };
 };
 
 /**
  * Convert unsupported block-level plugins from PukiWiki to HTML comments
  *
  * These plugins cannot be represented in static Markdown, so they are
- * preserved as HTML comments. This includes:
+ * preserved as HTML comments (or removed if stripComments is enabled). This includes:
  * - System directives (author, freeze, norelated, nofollow, norightbar)
  * - Dynamic/interactive plugins (contents, comment, pcomment, article, etc.)
  * - Layout control plugins (clear)
@@ -476,13 +524,14 @@ const convertInclude = (
  * Note: #include is handled by convertInclude() function
  *
  * @param line - Line to convert
- * @param customExcludePlugins - Custom plugins to exclude (from CLI option)
+ * @param pageName - Current page name (unused, for signature consistency)
+ * @param options - Conversion options
  * @returns Converted line with HTML comment, or original line if not matched
  */
 const convertUnsupportedBlockPlugin = (
   line: string,
-  customExcludePlugins: string[],
   _pageName: string,
+  options: ConversionOptions,
 ): ConversionResult => {
   const trimmed = line.trimEnd();
 
@@ -553,7 +602,7 @@ const convertUnsupportedBlockPlugin = (
   // Combine default and custom plugins
   const allPlugins = [
     ...DEFAULT_EXCLUDE_BLOCK_PLUGINS,
-    ...customExcludePlugins,
+    ...options.excludeBlockPlugins,
   ];
 
   for (const plugin of allPlugins) {
@@ -563,12 +612,16 @@ const convertUnsupportedBlockPlugin = (
     const regex = new RegExp(`^#${plugin}(?:\\(.*\\).*)?$`);
 
     if (regex.test(trimmed)) {
+      // If stripComments is enabled, remove the line entirely
+      if (options.stripComments) {
+        return { matched: true, lines: [] };
+      }
       // No inline processing for HTML comments
-      return { lines: [`<!-- ${trimmed} -->`] };
+      return { matched: true, lines: [`<!-- ${trimmed} -->`] };
     }
   }
 
-  return { lines: [] }; // No match
+  return { matched: false };
 };
 
 /**
@@ -592,12 +645,12 @@ const convertLineHeadEscape = (
 ): ConversionResult => {
   // Don't process empty ~ or ~ with only whitespace after it
   const trimmed = line.trimEnd();
-  if (trimmed === "~") return { lines: [] }; // No match
+  if (trimmed === "~") return { matched: false };
 
-  if (!line.startsWith("~")) return { lines: [] }; // No match
+  if (!line.startsWith("~")) return { matched: false };
 
   const restOfLine = line.substring(1);
-  if (restOfLine.length === 0) return { lines: [] }; // No match
+  if (restOfLine.length === 0) return { matched: false };
 
   const firstChar = restOfLine.charAt(0);
   // Markdown characters that need escaping at line start
@@ -615,7 +668,7 @@ const convertLineHeadEscape = (
   // Apply inline processing to the text
   converted = applyInlineConversions(converted, pageName);
 
-  return { lines: [converted] };
+  return { matched: true, lines: [converted] };
 };
 
 /**
@@ -639,16 +692,16 @@ const convertHorizontalRule = (
   // Match ---- (4 or more hyphens), with or without trailing text
   // Trailing text is discarded (PukiWiki behavior)
   if (/^-{4,}/.test(trimmed)) {
-    return { lines: ["---"] };
+    return { matched: true, lines: ["---"] };
   }
 
   // Match #hr, #hr(), or #hr() with trailing text
   // Does NOT match #hrxxx or #hr text
   if (/^#hr(\(\).*)?$/.test(trimmed)) {
-    return { lines: ["---"] };
+    return { matched: true, lines: ["---"] };
   }
 
-  return { lines: [] }; // No match
+  return { matched: false };
 };
 
 /**
@@ -674,10 +727,10 @@ const convertLineBreak = (
   // Match #br, #br(), or #br() with trailing text
   // Does NOT match #brxxx or #br text
   if (/^#br(\(\).*)?$/.test(trimmed)) {
-    return { lines: ["<br>"] };
+    return { matched: true, lines: ["<br>"] };
   }
 
-  return { lines: [] }; // No match
+  return { matched: false };
 };
 
 /**
@@ -695,7 +748,7 @@ const convertLineBreak = (
 const convertQuote = (line: string, pageName: string): ConversionResult => {
   const match = line.match(/^(>{1,})(.*)$/);
   if (!match || !match[1] || match[2] === undefined) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   const level = match[1].length;
@@ -705,7 +758,7 @@ const convertQuote = (line: string, pageName: string): ConversionResult => {
   text = applyInlineConversions(text, pageName);
 
   const quotes = "> ".repeat(level);
-  return { lines: [`${quotes}${text}`] };
+  return { matched: true, lines: [`${quotes}${text}`] };
 };
 
 /**
@@ -1187,7 +1240,7 @@ const convertRefBlock = (
   // e.g., #ref(file (1).png)
   const match = trimmed.match(/^#ref\((.+)\)/);
   if (!match || !match[1]) {
-    return { lines: [] }; // No match
+    return { matched: false };
   }
 
   const { filename, params } = parseRefContent(match[1]);
@@ -1195,7 +1248,7 @@ const convertRefBlock = (
   const converted = convertAttachmentReference(filename, params, currentPage);
 
   // Already fully converted, no inline processing needed
-  return { lines: [converted] };
+  return { matched: true, lines: [converted] };
 };
 
 /**
@@ -1393,6 +1446,7 @@ const determineColumnAligns = (
 const generateMarkdownTable = (
   rows: TableRow[],
   pageName: string,
+  options: ConversionOptions,
 ): string[] => {
   if (rows.length === 0) return [];
 
@@ -1452,7 +1506,8 @@ const generateMarkdownTable = (
       }
 
       // Add BGCOLOR as HTML comment (not converted due to Markdown table limitations)
-      if (cell.bgColor) {
+      // unless stripComments is enabled
+      if (cell.bgColor && !options.stripComments) {
         content = `${content} <!-- BGCOLOR(${cell.bgColor}) -->`;
       }
 

@@ -621,7 +621,11 @@ describe("convertToMarkdown", () => {
     it("should convert custom plugin when specified", () => {
       const input = "#myplugin";
       const expected = "<!-- #myplugin -->";
-      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+      expect(
+        convertToMarkdown(input, "テスト", {
+          excludeBlockPlugins: ["myplugin"],
+        }),
+      ).toBe(expected);
     });
 
     it("should convert multiple custom plugins", () => {
@@ -629,26 +633,40 @@ describe("convertToMarkdown", () => {
       const expected =
         "<!-- #customplugin1 -->\nテキスト\n<!-- #customplugin2 -->";
       expect(
-        convertToMarkdown(input, "テスト", ["customplugin1", "customplugin2"]),
+        convertToMarkdown(input, "テスト", {
+          excludeBlockPlugins: ["customplugin1", "customplugin2"],
+        }),
       ).toBe(expected);
     });
 
     it("should convert custom plugin with parameters", () => {
       const input = "#myplugin(param1,param2)";
       const expected = "<!-- #myplugin(param1,param2) -->";
-      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+      expect(
+        convertToMarkdown(input, "テスト", {
+          excludeBlockPlugins: ["myplugin"],
+        }),
+      ).toBe(expected);
     });
 
     it("should not convert non-specified custom plugin", () => {
       const input = "#otherplugin";
       const expected = "#otherplugin";
-      expect(convertToMarkdown(input, "テスト", ["myplugin"])).toBe(expected);
+      expect(
+        convertToMarkdown(input, "テスト", {
+          excludeBlockPlugins: ["myplugin"],
+        }),
+      ).toBe(expected);
     });
 
     it("should handle custom plugins with special regex characters", () => {
       const input = "#my.plugin";
       const expected = "<!-- #my.plugin -->";
-      expect(convertToMarkdown(input, "テスト", ["my.plugin"])).toBe(expected);
+      expect(
+        convertToMarkdown(input, "テスト", {
+          excludeBlockPlugins: ["my.plugin"],
+        }),
+      ).toBe(expected);
     });
   });
 
@@ -2026,6 +2044,120 @@ describe("convertToMarkdown", () => {
     it("should handle only newlines", () => {
       const input = "\n\n\n";
       expect(convertToMarkdown(input, "テストページ")).toBe(input);
+    });
+  });
+
+  describe("stripComments option", () => {
+    it("should remove PukiWiki comment lines when stripComments is true", () => {
+      const input = "//コメント\nテキスト\n// TODO: fix";
+      const expected = "テキスト";
+      expect(convertToMarkdown(input, "テスト", { stripComments: true })).toBe(
+        expected,
+      );
+    });
+
+    it("should preserve PukiWiki comment lines when stripComments is false", () => {
+      const input = "//コメント\nテキスト";
+      const expected = "<!-- コメント -->\nテキスト";
+      expect(convertToMarkdown(input, "テスト", { stripComments: false })).toBe(
+        expected,
+      );
+    });
+
+    it("should remove block plugin comments when stripComments is true", () => {
+      const input = "#contents\nテキスト\n#comment";
+      const expected = "テキスト";
+      expect(convertToMarkdown(input, "テスト", { stripComments: true })).toBe(
+        expected,
+      );
+    });
+
+    it("should preserve block plugin comments when stripComments is false", () => {
+      const input = "#contents\nテキスト";
+      const expected = "<!-- #contents -->\nテキスト";
+      expect(convertToMarkdown(input, "テスト", { stripComments: false })).toBe(
+        expected,
+      );
+    });
+
+    it("should remove #vote comment but keep table when stripComments is true", () => {
+      const input = "#vote(選択肢1[5],選択肢2[10])";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: true,
+      });
+      expect(result).not.toContain("<!-- #vote");
+      expect(result).toContain("| 選択肢 | 投票数 |");
+      expect(result).toContain("| 選択肢1 | 5 |");
+      expect(result).toContain("| 選択肢2 | 10 |");
+    });
+
+    it("should preserve #vote comment and table when stripComments is false", () => {
+      const input = "#vote(選択肢1[5],選択肢2[10])";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: false,
+      });
+      expect(result).toContain("<!-- #vote(選択肢1[5],選択肢2[10]) -->");
+      expect(result).toContain("| 選択肢 | 投票数 |");
+    });
+
+    it("should remove #include comment but keep link when stripComments is true", () => {
+      const input = "#include(CommonHeader)";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: true,
+      });
+      expect(result).not.toContain("<!-- #include");
+      expect(result).toBe("[CommonHeader](CommonHeader.md)");
+    });
+
+    it("should preserve #include comment and link when stripComments is false", () => {
+      const input = "#include(CommonHeader)";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: false,
+      });
+      expect(result).toContain("<!-- #include(CommonHeader) -->");
+      expect(result).toContain("[CommonHeader](CommonHeader.md)");
+    });
+
+    it("should remove BGCOLOR comments in tables when stripComments is true", () => {
+      const input = "|BGCOLOR(yellow):テキスト|h";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: true,
+      });
+      expect(result).not.toContain("BGCOLOR");
+      expect(result).toContain("テキスト");
+    });
+
+    it("should preserve BGCOLOR comments in tables when stripComments is false", () => {
+      const input = "|BGCOLOR(yellow):テキスト|h";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: false,
+      });
+      expect(result).toContain("<!-- BGCOLOR(yellow) -->");
+      expect(result).toContain("テキスト");
+    });
+
+    it("should handle mixed comments when stripComments is true", () => {
+      const input =
+        "//コメント\n#contents\nテキスト\n#vote(A[1],B[2])\n#include(Page)";
+      const result = convertToMarkdown(input, "テスト", {
+        stripComments: true,
+      });
+      expect(result).not.toContain("<!--");
+      expect(result).toContain("テキスト");
+      expect(result).toContain("| A | 1 |");
+      expect(result).toContain("[Page](Page.md)");
+    });
+
+    it("should work with excludeBlockPlugins and stripComments together", () => {
+      const input = "#myplugin\nテキスト";
+      const result = convertToMarkdown(input, "テスト", {
+        excludeBlockPlugins: ["myplugin"],
+        stripComments: true,
+      });
+      // Custom plugin should be removed when stripComments is true
+      expect(result).not.toContain("<!-- #myplugin");
+      expect(result).not.toContain("#myplugin");
+      expect(result).toContain("テキスト");
     });
   });
 });

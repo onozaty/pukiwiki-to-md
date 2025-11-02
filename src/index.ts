@@ -13,6 +13,7 @@ const program = new Command();
  * @param outputPath - Output folder path
  * @param encoding - Input file encoding (default: utf-8)
  * @param excludePlugins - Comma-separated custom plugins to exclude (default: empty string)
+ * @param stripComments - Whether to remove HTML comments (default: false)
  */
 export const main = async (
   wikiPath: string,
@@ -20,6 +21,7 @@ export const main = async (
   outputPath: string,
   encoding: string = "utf-8",
   excludePlugins: string = "",
+  stripComments: boolean = false,
 ): Promise<void> => {
   // Validate input directories
   if (!(await exists(wikiPath))) {
@@ -46,6 +48,9 @@ export const main = async (
   if (excludeBlockPlugins.length > 0) {
     console.log(`Custom exclude plugins: ${excludeBlockPlugins.join(", ")}`);
   }
+  if (stripComments) {
+    console.log(`Strip comments: enabled`);
+  }
   console.log();
 
   // Process conversion
@@ -55,6 +60,7 @@ export const main = async (
     outputPath,
     encoding,
     excludeBlockPlugins,
+    stripComments,
   );
 
   console.log();
@@ -84,6 +90,11 @@ program
     'Comma-separated list of custom block plugins to exclude (e.g., "myplugin,customplugin")',
     "",
   )
+  .option(
+    "-s, --strip-comments",
+    "Remove all HTML comments from output (plugin comments, PukiWiki comments, etc.)",
+    false,
+  )
   .action(
     async (options: {
       wiki: string;
@@ -91,6 +102,7 @@ program
       output: string;
       encoding: string;
       excludePlugins: string;
+      stripComments: boolean;
     }) => {
       try {
         await main(
@@ -99,6 +111,7 @@ program
           options.output,
           options.encoding,
           options.excludePlugins,
+          options.stripComments,
         );
       } catch (error) {
         console.error(
