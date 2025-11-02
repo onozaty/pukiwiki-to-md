@@ -2045,6 +2045,42 @@ describe("convertToMarkdown", () => {
       const input = "\n\n\n";
       expect(convertToMarkdown(input, "テストページ")).toBe(input);
     });
+
+    it("should preserve trailing newline", () => {
+      const input = "*見出し\n";
+      const expected = "# 見出し\n";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should preserve trailing newline with multiple lines", () => {
+      const input = "*見出し\nテキスト\n";
+      const expected = "# 見出し\nテキスト\n";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle input without trailing newline", () => {
+      const input = "*見出し";
+      const expected = "# 見出し";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should handle multiple lines without trailing newline", () => {
+      const input = "*見出し\nテキスト";
+      const expected = "# 見出し\nテキスト";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should preserve multiple trailing newlines", () => {
+      const input = "*見出し\nテキスト\n\n";
+      const expected = "# 見出し\nテキスト\n\n";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should preserve many trailing newlines", () => {
+      const input = "*見出し\n\n\n\n";
+      const expected = "# 見出し\n\n\n\n";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
   });
 
   describe("stripComments option", () => {
