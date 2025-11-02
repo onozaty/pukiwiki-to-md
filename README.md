@@ -327,9 +327,41 @@ Output: <!-- #vote(''Bold''[5],[[Link]][10]) -->
 
 Note: The voting functionality is lost, and the vote data is preserved as a static snapshot.
 
+### Include Plugin
+
+The `#include` plugin is converted to an HTML comment plus a link to the included page, allowing navigation while preserving the original syntax:
+
+**Input:**
+```
+#include(CommonHeader)
+```
+
+**Output:**
+```markdown
+<!-- #include(CommonHeader) -->
+[CommonHeader](CommonHeader.md)
+```
+
+**With parameters:**
+```
+Input:  #include(PageName,notitle)
+Output: <!-- #include(PageName,notitle) -->
+        [PageName](PageName.md)
+```
+
+**Hierarchical pages:**
+```
+Current page: Project/Task
+Input:  #include(Project/Common)
+Output: <!-- #include(Project/Common) -->
+        [Project/Common](Common.md)
+```
+
+Note: The include functionality is lost, but the link provides navigation to the included page.
+
 ### Unsupported Plugins
 
-The following block plugins cannot be represented in Markdown and are converted to HTML comments (46 plugins total):
+The following block plugins cannot be represented in Markdown and are converted to HTML comments (45 plugins total). Note that `#vote` and `#include` have special conversion handling (see their dedicated sections above):
 
 **System directives:**
 - `#author(...)` - Page metadata (author and timestamp)
@@ -340,7 +372,6 @@ The following block plugins cannot be represented in Markdown and are converted 
 **Content inclusion & display:**
 - `#amazon` - Amazon product information
 - `#aname` - Anchor definition
-- `#include` - Include another page (converted to comment + link)
 - `#includesubmenu` - Include submenu
 
 **Dynamic functionality & forms:**
@@ -414,22 +445,6 @@ Input:  #freeze additional text
 Output: #freeze additional text
         (not converted, remains as-is)
 ```
-
-**Special Handling for `#include`:**
-
-The `#include` plugin is converted to an HTML comment plus a link to the included page:
-
-```
-Input:  #include(CommonHeader)
-Output: <!-- #include(CommonHeader) -->
-        [CommonHeader](CommonHeader.md)
-
-Input:  #include(PageName,notitle)
-Output: <!-- #include(PageName,notitle) -->
-        [PageName](PageName.md)
-```
-
-This allows users to navigate to the included page in the Markdown version while preserving the original syntax in a comment.
 
 **Custom Plugin Exclusion:**
 
