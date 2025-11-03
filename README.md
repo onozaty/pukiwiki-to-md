@@ -241,6 +241,9 @@ Cells can be formatted with the following prefixes:
 
 | PukiWiki | Description | Output |
 |----------|-------------|--------|
+| `LEFT:text` | Left-aligned cell | `text` (left alignment applied to column) |
+| `CENTER:text` | Center-aligned cell | `text` (center alignment applied to column) |
+| `RIGHT:text` | Right-aligned cell | `text` (right alignment applied to column) |
 | `BOLD:text` | Bold text | `**text**` |
 | `SIZE(20):text` | Font size (px) | `<span style="font-size: 20px">text</span>` |
 | `COLOR(red):text` | Text color | `<span style="color: red">text</span>` |
@@ -368,7 +371,7 @@ Note: The include functionality is lost, but the link provides navigation to the
 
 ### Unsupported Plugins
 
-The following block plugins cannot be represented in Markdown and are converted to HTML comments (45 plugins total). Note that `#vote` and `#include` have special conversion handling (see their dedicated sections above):
+The following block plugins cannot be represented in Markdown and are converted to HTML comments (46 plugins total). Note that `#vote` and `#include` have special conversion handling (see their dedicated sections above):
 
 **System directives:**
 - `#author(...)` - Page metadata (author and timestamp)

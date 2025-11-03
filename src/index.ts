@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { exists } from "./file-io";
 import { processConversion } from "./processor";
+import packageJson from "../package.json";
 
 const program = new Command();
 
@@ -80,7 +81,7 @@ export const main = async (
 program
   .name("pukiwiki-to-md")
   .description("Convert PukiWiki to Markdown")
-  .version("1.0.0")
+  .version(packageJson.version)
   .requiredOption("-w, --wiki <path>", "Wiki folder path")
   .requiredOption("-a, --attach <path>", "Attach folder path")
   .requiredOption("-o, --output <path>", "Output folder path")
