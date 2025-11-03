@@ -52,6 +52,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 | `--output <path>` | `-o` | (required) | Output directory path |
 | `--encoding <encoding>` | `-e` | `utf-8` | Input file encoding (utf-8 or euc-jp) |
 | `--exclude-plugins <list>` | `-x` | (empty) | Comma-separated custom block plugins to exclude |
+| `--strip-comments` | `-s` | `false` | Remove all HTML comments from output |
 | `--help` | `-h` | | Display help information |
 | `--version` | `-v` | | Display version number |
 
@@ -73,6 +74,12 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -e euc-jp
 
 ```bash
 npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
+```
+
+**Remove HTML comments from output:**
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -s
 ```
 
 ## Conversion Features
@@ -457,6 +464,22 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,custo
 This will convert `#myplugin` and `#customplugin` to HTML comments in addition to the default plugins listed above.
 
 **Note:** Dynamic functionality and layout features are lost, but the original syntax is preserved for reference in HTML comments.
+
+### Removing HTML Comments
+
+By default, unsupported plugins and PukiWiki comments are converted to HTML comments for reference. You can use the `--strip-comments` option to remove all HTML comments from the output:
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output --strip-comments
+```
+
+This removes:
+- PukiWiki comment lines (`//comment`)
+- Unsupported block plugin comments (`#contents`, `#comment`, etc.)
+- Plugin-specific comments (e.g., `#vote` comment line, `#include` comment line)
+- BGCOLOR comments in table cells
+
+The actual converted content (tables from `#vote`, links from `#include`, etc.) is preserved.
 
 ## Attachments
 

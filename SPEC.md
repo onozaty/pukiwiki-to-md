@@ -32,6 +32,7 @@ pukiwiki-to-md --wiki <wikiフォルダ> --attach <attachフォルダ> --output 
 |----------|-------|------------|------|
 | `--encoding` | `-e` | `utf-8` | 入力ファイルの文字エンコーディング |
 | `--exclude-plugins` | `-x` | (空) | カスタムブロックプラグインのカンマ区切りリスト |
+| `--strip-comments` | `-s` | `false` | HTMLコメントを出力から削除 |
 | `--help` | `-h` | - | ヘルプを表示 |
 | `--version` | `-v` | - | バージョンを表示 |
 
@@ -46,6 +47,9 @@ pukiwiki-to-md -w ./wiki -a ./attach -o ./output --encoding euc-jp
 
 # カスタムプラグインを除外
 pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,customplugin"
+
+# HTMLコメントを削除
+pukiwiki-to-md -w ./wiki -a ./attach -o ./output --strip-comments
 
 # ヘルプ表示
 pukiwiki-to-md --help
@@ -1034,6 +1038,36 @@ PukiWikiのコメント行はMarkdownのHTMLコメントに変換されます：
 <!-- これはコメントです -->
 # 見出し
 <!-- TODO: あとで修正 -->
+テキスト
+```
+
+#### HTMLコメントの削除
+
+`--strip-comments`オプションを使用すると、すべてのHTMLコメントを出力から削除できます：
+
+```bash
+pukiwiki-to-md -w ./wiki -a ./attach -o ./output --strip-comments
+```
+
+このオプションを有効にすると、以下が削除されます：
+- PukiWikiコメント行（`//コメント`）
+- ブロックプラグインのHTMLコメント（`#contents`, `#comment`など）
+- `#vote`プラグインのコメント行（投票結果の表は保持）
+- `#include`プラグインのコメント行（リンクは保持）
+- テーブルセル内のBGCOLORコメント
+
+実際の変換内容（`#vote`の表、`#include`のリンクなど）は保持されます。
+
+**例（--strip-commentsあり）:**
+```
+入力:
+//これはコメントです
+*見出し
+#contents
+テキスト
+
+出力:
+# 見出し
 テキスト
 ```
 
