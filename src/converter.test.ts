@@ -1926,6 +1926,92 @@ describe("convertToMarkdown", () => {
       });
     });
 
+    describe("table cells with #ref plugin", () => {
+      it("should convert #ref with image in table cell", () => {
+        const input = "|#ref(image.png)|説明|h";
+        const expected =
+          "| ![image.png](テスト_attachment_image.png) | 説明 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with non-image file in table cell", () => {
+        const input = "|#ref(document.pdf)|説明|";
+        const expected =
+          "|  |  |\n| --- | --- |\n| [document.pdf](テスト_attachment_document.pdf) | 説明 |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with alt text in table cell", () => {
+        const input = "|#ref(image.png,図1)|データ|h";
+        const expected =
+          "| ![図1](テスト_attachment_image.png) | データ |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with size specification in table cell", () => {
+        const input = "|#ref(image.png,300x200)|データ|";
+        const expected =
+          '|  |  |\n| --- | --- |\n| <img src="テスト_attachment_image.png" alt="image.png" width="300" height="200"> | データ |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with size and alt text in table cell", () => {
+        const input = "|#ref(image.png,300x200,スクリーンショット)|説明|h";
+        const expected =
+          '| <img src="テスト_attachment_image.png" alt="スクリーンショット" width="300" height="200"> | 説明 |\n| --- | --- |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert multiple #ref in same table", () => {
+        const input = "|#ref(image1.png)|#ref(image2.png)|h";
+        const expected =
+          "| ![image1.png](テスト_attachment_image1.png) | ![image2.png](テスト_attachment_image2.png) |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref with quoted filename containing comma", () => {
+        const input = '|#ref("file, name.png")|データ|';
+        const expected =
+          '|  |  |\n| --- | --- |\n| ![file, name.png](テスト_attachment_file%2C%20name.png) | データ |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle #ref with other page attachment", () => {
+        const input = "|#ref(OtherPage/diagram.png)|説明|h";
+        const expected =
+          "| ![diagram.png](OtherPage_attachment_diagram.png) | 説明 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref combined with BOLD formatting", () => {
+        const input = "|BOLD:#ref(image.png)|通常|h";
+        const expected =
+          "| **![image.png](テスト_attachment_image.png)** | 通常 |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle inline &ref alongside block #ref", () => {
+        const input = "|#ref(block.png)|&ref(inline.png);|h";
+        const expected =
+          "| ![block.png](テスト_attachment_block.png) | ![inline.png](テスト_attachment_inline.png) |\n| --- | --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should not convert #ref in cell with text before (not a block plugin)", () => {
+        const input = "|説明: #ref(image.png)|データ|";
+        const expected =
+          "|  |  |\n| --- | --- |\n| 説明: #ref(image.png) | データ |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should convert #ref and ignore text after closing parenthesis", () => {
+        const input = "|#ref(image.png) 図1|データ|";
+        const expected =
+          "|  |  |\n| --- | --- |\n| ![image.png](テスト_attachment_image.png) | データ |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
     describe("complex tables", () => {
       it("should handle table with all features", () => {
         const input =

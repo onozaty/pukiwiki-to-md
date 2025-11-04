@@ -1300,6 +1300,29 @@ const applyInlineConversions = (text: string, pageName: string): string => {
 };
 
 /**
+ * Convert table cell content (handles both block and inline conversions)
+ *
+ * Table cells in PukiWiki can contain block-level plugins like #ref.
+ * This function applies both block-level conversions (for specific plugins)
+ * and inline conversions.
+ *
+ * @param content - Cell content to convert
+ * @param pageName - Current page name for link resolution
+ * @returns Converted cell content
+ */
+const convertCellContent = (content: string, pageName: string): string => {
+  // Try #ref block plugin conversion first
+  // This is the most common block plugin used in table cells
+  const refResult = convertRefBlock(content, pageName);
+  if (refResult.matched && refResult.lines.length > 0 && refResult.lines[0]) {
+    return refResult.lines[0];
+  }
+
+  // Apply inline conversions (links, formatting, &ref, etc.)
+  return applyInlineConversions(content, pageName);
+};
+
+/**
  * Parse a table cell from PukiWiki format
  *
  * @param cellText - Cell text
@@ -1487,8 +1510,8 @@ const generateMarkdownTable = (
     const cells = row.cells.map((cell) => {
       let content = cell.content;
 
-      // Apply inline conversions (links, attachments, formatting)
-      content = applyInlineConversions(content, pageName);
+      // Apply cell-specific conversions (both block and inline)
+      content = convertCellContent(content, pageName);
 
       // Apply bold formatting (both ~ and BOLD:) only if content is not empty
       if ((cell.isHeader || cell.isBold) && content.trim() !== "") {

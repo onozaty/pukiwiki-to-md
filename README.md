@@ -266,6 +266,19 @@ Output: | <span style="font-size: 20px; color: red">**All**</span> <!-- BGCOLOR(
         | --- | --- |
 ```
 
+**Block Plugins in Table Cells:**
+
+The `#ref` block plugin is supported in table cells for embedding images and file attachments:
+
+```
+Input:  |#ref(image.png)|#ref(document.pdf,説明)|
+Output: |   |   |
+        | --- | --- |
+        | ![image.png](PageName_attachment_image.png) | [説明](PageName_attachment_document.pdf) |
+```
+
+When `#ref` is used at the start of a cell, it's processed as a block plugin. Text after the closing parenthesis is ignored (standard PukiWiki block plugin behavior). All `#ref` parameters (alt text, size specifications, etc.) are supported.
+
 ### Quotes
 
 | PukiWiki | Markdown |
