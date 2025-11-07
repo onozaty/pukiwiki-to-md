@@ -311,8 +311,9 @@ PukiWikiでは見出しに自動生成されるアンカーID（例: `[#qb249ac2
 | `&br;` または `&br();` | `<br>` | 改行（インライン） |
 | `テキスト~` | `テキスト<br>` | 行末改行 |
 | `&size(20){テキスト};` | `<span style="font-size: 20px">テキスト</span>` | 文字サイズ指定 |
-| `&color(red){テキスト};` | `<span style="color: red">テキスト</span>` | 文字色指定 |
-| `&color(red,yellow){テキスト};` | `<span style="color: red; background-color: yellow">テキスト</span>` | 文字色と背景色指定 |
+| `&color(red){テキスト};` | `<span style="color: red">テキスト</span>` | 文字色指定（新式） |
+| `&color(red,yellow){テキスト};` | `<span style="color: red; background-color: yellow">テキスト</span>` | 文字色と背景色指定（新式） |
+| `&color(red,テキスト);` | `<span style="color: red">テキスト</span>` | 文字色指定（旧式） |
 | `COLOR(red):テキスト` | `<span style="color: red">テキスト</span>` | 文字色指定（通常テキスト） |
 
 **注意事項:**
@@ -322,6 +323,10 @@ PukiWikiでは見出しに自動生成されるアンカーID（例: `[#qb249ac2
 - 文字サイズはピクセル単位(px)で指定します
 - 文字色は色名（`red`, `blue`など）または16進数（`#FF0000`, `#F00`など）で指定できます
 - 背景色は省略可能です
+- `&color`プラグインには新式（波括弧あり）と旧式（カンマ区切り）の2つの構文があります：
+  - 新式: `&color(色){テキスト};` または `&color(色,背景色){テキスト};`
+  - 旧式: `&color(色,テキスト);`（背景色指定不可）
+  - 両方の構文がサポートされています
 - `&size`と`&color`はHTMLの`<span>`タグに変換されるため、Markdownビューアーによっては表示されない場合があります
 - `COLOR(色):` 記法は次の `COLOR(色):` 記法が出現するか行末まで適用されます（通常テキストでのみ使用可能）
 
@@ -332,6 +337,7 @@ PukiWikiでは見出しに自動生成されるアンカーID（例: `[#qb249ac2
 テキスト2~
 ''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%
 &size(20){大きい文字};と&color(red){赤い文字};
+&color(blue,旧式);と&color(green){新式};
 COLOR(blue):青い文字COLOR(green):緑の文字
 
 出力:
@@ -339,6 +345,7 @@ COLOR(blue):青い文字COLOR(green):緑の文字
 テキスト2<br>
 **太字**と*イタリック*と~~取り消し~~と<u>下線</u>
 <span style="font-size: 20px">大きい文字</span>と<span style="color: red">赤い文字</span>
+<span style="color: blue">旧式</span>と<span style="color: green">新式</span>
 <span style="color: blue">青い文字</span><span style="color: green">緑の文字</span>
 ```
 

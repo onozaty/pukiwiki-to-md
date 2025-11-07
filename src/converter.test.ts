@@ -1201,6 +1201,38 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert &color old style (color,text)", () => {
+      const input = "&color(red,赤い文字);";
+      const expected = '<span style="color: red">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color old style with hex color", () => {
+      const input = "&color(#FF0000,赤い文字);";
+      const expected = '<span style="color: #FF0000">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert &color old style case-insensitive", () => {
+      const input = "&COLOR(blue,青い文字);";
+      const expected = '<span style="color: blue">青い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple &color old style in one line", () => {
+      const input = "&color(red,赤);と&color(blue,青);";
+      const expected =
+        '<span style="color: red">赤</span>と<span style="color: blue">青</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert both old and new &color styles together", () => {
+      const input = "&color(red,旧式);と&color(blue){新式};";
+      const expected =
+        '<span style="color: red">旧式</span>と<span style="color: blue">新式</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should convert COLOR(color):text format in regular text", () => {
       const input = "COLOR(red):赤い文字";
       const expected = '<span style="color: red">赤い文字</span>';

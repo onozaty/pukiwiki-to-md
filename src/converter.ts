@@ -799,7 +799,8 @@ const convertInlineFormat = (text: string): string => {
     (_, size, text) => `<span style="font-size: ${size}px">${text}</span>`,
   );
 
-  // Convert color: &color(color){text}; → <span style="color: color">text</span>
+  // Convert color (new style with braces):
+  // &color(color){text}; → <span style="color: color">text</span>
   // &color(color,bgcolor){text}; → <span style="color: color; background-color: bgcolor">text</span>
   converted = converted.replace(
     /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/gi,
@@ -809,6 +810,15 @@ const convertInlineFormat = (text: string): string => {
       } else {
         return `<span style="color: ${fgColor}">${text}</span>`;
       }
+    },
+  );
+
+  // Convert color (old style without braces):
+  // &color(color,text); → <span style="color: color">text</span>
+  converted = converted.replace(
+    /&color\(([^,)]+),([^)]+)\);/gi,
+    (_, fgColor, text) => {
+      return `<span style="color: ${fgColor}">${text}</span>`;
     },
   );
 
