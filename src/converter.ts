@@ -503,7 +503,7 @@ const convertInclude = (
 
   // Generate link to the included page (no inline processing needed)
   const relativePath = calculateRelativePath(currentPage, `${pageName}.md`);
-  const link = `[${pageName}](${relativePath})`;
+  const link = `[${escapeMarkdownLinkText(pageName)}](${relativePath})`;
   result.push(link);
 
   return { matched: true, lines: result };
@@ -816,6 +816,25 @@ const convertInlineFormat = (text: string): string => {
 };
 
 /**
+ * Escape special characters in Markdown link/image text
+ *
+ * Escapes characters that have special meaning in Markdown to prevent
+ * incorrect interpretation. This is specifically for link/image text content,
+ * not URLs.
+ *
+ * Escaped characters: [ ] \
+ *
+ * @param text - Text to escape (e.g., "text[with]brackets")
+ * @returns Escaped text (e.g., "text\\[with\\]brackets")
+ */
+const escapeMarkdownLinkText = (text: string): string => {
+  return text
+    .replace(/\\/g, "\\\\") // Escape backslash first to prevent double-escaping
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
+};
+
+/**
  * Encode a file path for use in Markdown URLs
  *
  * Encodes only characters that cause issues in Markdown links, while preserving
@@ -894,32 +913,41 @@ const convertLinks = (text: string, currentPage: string): string => {
   let converted = text;
 
   // Convert external links first: [[text:URL]] → [text](URL)
+  // Match content that doesn't contain ]] to avoid matching across multiple links
   converted = converted.replace(
-    /\[\[([^\]]+?):(https?:\/\/[^\]]+?)\]\]/g,
+    /\[\[((?:(?!\]\]).)+?):(https?:\/\/(?:(?!\]\]).)+?)\]\]/g,
     (_, linkText, url) => {
-      return `[${linkText}](${url})`;
+      return `[${escapeMarkdownLinkText(linkText)}](${url})`;
     },
   );
 
   // Convert internal links with custom text: [[text>page]] → [text](relativePath)
+  // Match content that doesn't contain ]] to avoid matching across multiple links
   converted = converted.replace(
-    /\[\[([^\]>]+?)>([^\]]+?)\]\]/g,
+    /\[\[((?:(?!\]\]).)+?)>((?:(?!\]\]).)+?)\]\]/g,
     (_, linkText, targetPage) => {
       const relativePath = calculateRelativePath(
         currentPage,
         `${targetPage}.md`,
       );
       const encodedPath = encodePathForMarkdown(relativePath);
-      return `[${linkText}](${encodedPath})`;
+      return `[${escapeMarkdownLinkText(linkText)}](${encodedPath})`;
     },
   );
 
   // Convert internal links: [[page]] → [page](relativePath)
-  converted = converted.replace(/\[\[([^\]>]+?)\]\]/g, (_, targetPage) => {
-    const relativePath = calculateRelativePath(currentPage, `${targetPage}.md`);
-    const encodedPath = encodePathForMarkdown(relativePath);
-    return `[${targetPage}](${encodedPath})`;
-  });
+  // Match content that doesn't contain ]] to avoid matching across multiple links
+  converted = converted.replace(
+    /\[\[((?:(?!\]\]).)+?)\]\]/g,
+    (_, targetPage) => {
+      const relativePath = calculateRelativePath(
+        currentPage,
+        `${targetPage}.md`,
+      );
+      const encodedPath = encodePathForMarkdown(relativePath);
+      return `[${escapeMarkdownLinkText(targetPage)}](${encodedPath})`;
+    },
+  );
 
   return converted;
 };
@@ -1050,7 +1078,10 @@ const parseRefParameters = (
     }
 
     // If none of the above, it's a text parameter
-    textParams.push(param);
+    // Filter out empty strings to match PukiWiki behavior
+    if (param !== "") {
+      textParams.push(param);
+    }
   }
 
   return { altText: textParams.join(","), size };
@@ -1148,10 +1179,10 @@ const convertAttachmentReference = (
       return generateImageTag(encodedPath, effectiveAltText, size);
     }
     // Otherwise use Markdown format
-    return `![${effectiveAltText}](${encodedPath})`;
+    return `![${escapeMarkdownLinkText(effectiveAltText)}](${encodedPath})`;
   } else {
     // Non-image files always use link format (size is ignored)
-    return `[${effectiveAltText}](${encodedPath})`;
+    return `[${escapeMarkdownLinkText(effectiveAltText)}](${encodedPath})`;
   }
 };
 

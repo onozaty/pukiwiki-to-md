@@ -1263,6 +1263,26 @@ describe("convertToMarkdown", () => {
         const expected = "[ブログ記事](%3Ablog/2018-10-09.md)";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
+
+      it("should escape brackets in page name", () => {
+        const input = "[[ページ[括弧]名]]";
+        // Link text: brackets are escaped for Markdown
+        // URL: brackets are percent-encoded by encodePathForMarkdown
+        const expected = "[ページ\\[括弧\\]名](ページ%5B括弧%5D名.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should escape brackets in link text", () => {
+        const input = "[[テキスト[xxx]>ページ名]]";
+        const expected = "[テキスト\\[xxx\\]](ページ名.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should escape backslash in link text", () => {
+        const input = "[[テキスト\\バックスラッシュ>ページ名]]";
+        const expected = "[テキスト\\\\バックスラッシュ](ページ名.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
     });
 
     describe("external links", () => {
@@ -1281,6 +1301,12 @@ describe("convertToMarkdown", () => {
       it("should convert external link with path", () => {
         const input = "[[ドキュメント:https://example.com/docs/index.html]]";
         const expected = "[ドキュメント](https://example.com/docs/index.html)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should escape brackets in external link text", () => {
+        const input = "[[外部[サイト]:https://example.com]]";
+        const expected = "[外部\\[サイト\\]](https://example.com)";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
     });
@@ -1489,6 +1515,44 @@ describe("convertToMarkdown", () => {
         const expected = "![テスト画像](テスト_attachment_image.png)";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
+
+      it("should escape brackets in alt text for images", () => {
+        const input = "&ref(image.png,[xxx]タイトル);";
+        const expected = "![\\[xxx\\]タイトル](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should escape brackets in alt text for files", () => {
+        const input = "&ref(document.pdf,[重要]資料);";
+        const expected = "[\\[重要\\]資料](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should escape backslash in alt text", () => {
+        const input = "&ref(document.pdf,資料\\バックスラッシュ);";
+        const expected =
+          "[資料\\\\バックスラッシュ](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter empty parameters (single empty)", () => {
+        const input = "&ref(document.pdf,,[xxx]yyy);";
+        const expected = "[\\[xxx\\]yyy](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter empty parameters (multiple empty)", () => {
+        const input = "&ref(image.png,,,alt text);";
+        const expected = "![alt text](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter empty parameters with size specification", () => {
+        const input = "&ref(image.png,,300x200,図表);";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図表" width="300" height="200">';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
     });
 
     describe("#ref with complex parameters", () => {
@@ -1632,8 +1696,35 @@ describe("convertToMarkdown", () => {
 
       it("should not apply inline formatting in alt text (link)", () => {
         const input = "#ref(document.pdf,[[リンク]]付きテキスト)";
+        // Alt text does not undergo inline processing, so brackets from [[...]] remain
+        // and then get escaped for Markdown safety
         const expected =
-          "[[[リンク]]付きテキスト](テスト_attachment_document.pdf)";
+          "[\\[\\[リンク\\]\\]付きテキスト](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should escape brackets in #ref alt text for images", () => {
+        const input = "#ref(image.png,[xxx]タイトル)";
+        const expected = "![\\[xxx\\]タイトル](テスト_attachment_image.png)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should escape brackets in #ref alt text for files", () => {
+        const input = "#ref(document.pdf,[重要]資料)";
+        const expected = "[\\[重要\\]資料](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter empty parameters in #ref (single empty)", () => {
+        const input = "#ref(document.pdf,,[xxx]yyy)";
+        const expected = "[\\[xxx\\]yyy](テスト_attachment_document.pdf)";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should filter empty parameters in #ref (with size)", () => {
+        const input = "#ref(image.png,,300x200,図表)";
+        const expected =
+          '<img src="テスト_attachment_image.png" alt="図表" width="300" height="200">';
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
@@ -1972,7 +2063,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ref with quoted filename containing comma", () => {
         const input = '|#ref("file, name.png")|データ|';
         const expected =
-          '|  |  |\n| --- | --- |\n| ![file, name.png](テスト_attachment_file%2C%20name.png) | データ |';
+          "|  |  |\n| --- | --- |\n| ![file, name.png](テスト_attachment_file%2C%20name.png) | データ |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
 
