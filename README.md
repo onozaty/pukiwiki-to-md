@@ -125,6 +125,9 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `&size(20){text};` | `<span style="font-size: 20px">text</span>` |
 | `&color(red){text};` | `<span style="color: red">text</span>` |
 | `&color(red,yellow){text};` | `<span style="color: red; background-color: yellow">text</span>` |
+| `COLOR(red):text` | `<span style="color: red">text</span>` |
+
+**Note:** The `COLOR(color):` format applies color until the next `COLOR(color):` directive or end of line. Multiple consecutive color directives are supported (e.g., `COLOR(red):textCOLOR(blue):text`).
 
 ### Comments
 

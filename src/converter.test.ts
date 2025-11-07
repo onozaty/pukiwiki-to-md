@@ -1200,6 +1200,26 @@ describe("convertToMarkdown", () => {
         '<span style="font-size: 20px">大きい</span>と<span style="color: red">赤</span>';
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
+
+    it("should convert COLOR(color):text format in regular text", () => {
+      const input = "COLOR(red):赤い文字";
+      const expected = '<span style="color: red">赤い文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple COLOR directives", () => {
+      const input = "xxxCOLOR(red):redCOLOR(green):green";
+      const expected =
+        'xxx<span style="color: red">red</span><span style="color: green">green</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert COLOR with text continuation", () => {
+      const input = "前の文字COLOR(blue):青い部分後の文字";
+      const expected =
+        '前の文字<span style="color: blue">青い部分後の文字</span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
   });
 
   describe("link conversion", () => {

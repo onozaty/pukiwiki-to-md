@@ -812,6 +812,15 @@ const convertInlineFormat = (text: string): string => {
     },
   );
 
+  // Convert COLOR(color):text format used in regular text
+  // COLOR(red):text applies color until next COLOR directive or end of text
+  converted = converted.replace(
+    /COLOR\(([^)]+)\):([^]*?)(?=COLOR\([^)]+\):|$)/g,
+    (_, color, text) => {
+      return `<span style="color: ${color}">${text}</span>`;
+    },
+  );
+
   return converted;
 };
 
