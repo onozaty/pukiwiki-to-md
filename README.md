@@ -84,6 +84,8 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -s
 
 ## Conversion Features
 
+**Note:** Plugin names (starting with `#` or `&`) are case-insensitive, matching PukiWiki's behavior. For example, `#ref`, `#REF`, and `#Ref` are all recognized as the same plugin. Parameters (filenames, text, etc.) preserve their original case.
+
 ### Headings
 
 Converts PukiWiki headings to Markdown, automatically removing anchor IDs:

@@ -376,7 +376,7 @@ const convertVote = (
   const trimmed = line.trimEnd();
 
   // Match #vote plugin - greedy matching, allow text after closing )
-  const voteMatch = trimmed.match(/^#vote\((.+)\)/);
+  const voteMatch = trimmed.match(/^#vote\((.+)\)/i);
   if (!voteMatch || !voteMatch[1]) {
     return { matched: false };
   }
@@ -488,7 +488,7 @@ const convertInclude = (
   const trimmed = line.trimEnd();
 
   // Match #include(PageName) or #include(PageName,params) - allow text after closing )
-  const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)/);
+  const match = trimmed.match(/^#include\(([^,)]+)(?:,([^)]*))?\)/i);
   if (!match || !match[1]) {
     return { matched: false };
   }
@@ -609,7 +609,7 @@ const convertUnsupportedBlockPlugin = (
     // Match #plugin or #plugin(...)
     // Plugin names contain only [a-zA-Z0-9_], so no escaping needed
     // Parentheses are optional; if present, anything after them is allowed
-    const regex = new RegExp(`^#${plugin}(?:\\(.*\\).*)?$`);
+    const regex = new RegExp(`^#${plugin}(?:\\(.*\\).*)?$`, "i");
 
     if (regex.test(trimmed)) {
       // If stripComments is enabled, remove the line entirely
@@ -697,7 +697,7 @@ const convertHorizontalRule = (
 
   // Match #hr, #hr(), or #hr() with trailing text
   // Does NOT match #hrxxx or #hr text
-  if (/^#hr(\(\).*)?$/.test(trimmed)) {
+  if (/^#hr(\(\).*)?$/i.test(trimmed)) {
     return { matched: true, lines: ["---"] };
   }
 
@@ -726,7 +726,7 @@ const convertLineBreak = (
 
   // Match #br, #br(), or #br() with trailing text
   // Does NOT match #brxxx or #br text
-  if (/^#br(\(\).*)?$/.test(trimmed)) {
+  if (/^#br(\(\).*)?$/i.test(trimmed)) {
     return { matched: true, lines: ["<br>"] };
   }
 
@@ -787,7 +787,7 @@ const convertInlineFormat = (text: string): string => {
   converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
   // Convert line break: &br; or &br(); → <br>
-  converted = converted.replace(/&br(\(\))?;/g, "<br>");
+  converted = converted.replace(/&br(\(\))?;/gi, "<br>");
 
   // Convert line-end tilde: text~ → text<br>
   // Only match ~ that is not preceded by ~ (to avoid ~~)
@@ -795,14 +795,14 @@ const convertInlineFormat = (text: string): string => {
 
   // Convert size: &size(20){text}; → <span style="font-size: 20px">text</span>
   converted = converted.replace(
-    /&size\((\d+)\)\{([^}]+)\};/g,
+    /&size\((\d+)\)\{([^}]+)\};/gi,
     (_, size, text) => `<span style="font-size: ${size}px">${text}</span>`,
   );
 
   // Convert color: &color(color){text}; → <span style="color: color">text</span>
   // &color(color,bgcolor){text}; → <span style="color: color; background-color: bgcolor">text</span>
   converted = converted.replace(
-    /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/g,
+    /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/gi,
     (_, fgColor, bgColor, text) => {
       if (bgColor) {
         return `<span style="color: ${fgColor}; background-color: ${bgColor}">${text}</span>`;
@@ -1278,7 +1278,7 @@ const convertRefBlock = (
 
   // Match #ref(...) - greedy matching to handle filenames with parentheses
   // e.g., #ref(file (1).png)
-  const match = trimmed.match(/^#ref\((.+)\)/);
+  const match = trimmed.match(/^#ref\((.+)\)/i);
   if (!match || !match[1]) {
     return { matched: false };
   }
@@ -1313,7 +1313,7 @@ const convertAttachments = (text: string, currentPage: string): string => {
 
   // Process inline &ref(...); (non-greedy matching)
   // Note: Block-level #ref(...) is handled by convertRefBlock
-  result = result.replace(/&ref\((.+?)\);/g, (_match, content) => {
+  result = result.replace(/&ref\((.+?)\);/gi, (_match, content) => {
     const { filename, params } = parseRefContent(content);
     return convertAttachmentReference(filename, params, currentPage);
   });
