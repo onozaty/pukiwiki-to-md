@@ -329,6 +329,11 @@ PukiWikiでは見出しに自動生成されるアンカーID（例: `[#qb249ac2
   - 両方の構文がサポートされています
 - `&size`と`&color`はHTMLの`<span>`タグに変換されるため、Markdownビューアーによっては表示されない場合があります
 - `COLOR(色):` 記法は次の `COLOR(色):` 記法が出現するか行末まで適用されます（通常テキストでのみ使用可能）
+- **ネスト構文のサポート**：`&size`と`&color`は相互にネストできます
+  - 例: `&color(red){&size(20){テキスト};};` → 赤色で20pxのテキスト
+  - 例: `&size(20){&color(red){テキスト};};` → 20pxで赤色のテキスト（順序は任意）
+  - ネスト内に他のインライン要素（`&br;`、太字など）も含められます
+  - 複数パス変換により、任意の深さのネストに対応
 
 **例:**
 ```
@@ -338,6 +343,8 @@ PukiWikiでは見出しに自動生成されるアンカーID（例: `[#qb249ac2
 ''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%
 &size(20){大きい文字};と&color(red){赤い文字};
 &color(blue,旧式);と&color(green){新式};
+&color(red){&size(20){ネスト};};
+&size(30){&color(blue){text1&br;text2};};
 COLOR(blue):青い文字COLOR(green):緑の文字
 
 出力:
@@ -346,6 +353,8 @@ COLOR(blue):青い文字COLOR(green):緑の文字
 **太字**と*イタリック*と~~取り消し~~と<u>下線</u>
 <span style="font-size: 20px">大きい文字</span>と<span style="color: red">赤い文字</span>
 <span style="color: blue">旧式</span>と<span style="color: green">新式</span>
+<span style="color: red"><span style="font-size: 20px">ネスト</span></span>
+<span style="font-size: 30px"><span style="color: blue">text1<br>text2</span></span>
 <span style="color: blue">青い文字</span><span style="color: green">緑の文字</span>
 ```
 

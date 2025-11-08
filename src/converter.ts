@@ -767,69 +767,83 @@ const convertQuote = (line: string, pageName: string): ConversionResult => {
  * PukiWiki: ''bold'', '''italic''', %%strikethrough%%, %%%underline%%%, &br; or &br();, text~, &size, &color
  * Markdown: **bold**, *italic*, ~~strikethrough~~, <u>underline</u>, <br>, text<br>, HTML span tags
  *
+ * Note: Supports nested plugin syntax (e.g., &color(red){&size(20){text};};)
+ * Uses multi-pass conversion to handle arbitrary nesting depth.
+ *
  * @param text - Text to convert
  * @returns Converted text
  */
 const convertInlineFormat = (text: string): string => {
   let converted = text;
+  let previousResult = "";
+  let iterations = 0;
+  const MAX_ITERATIONS = 10; // Safety limit to prevent infinite loops
 
-  // Convert italic first (longer pattern): '''text''' → *text*
-  converted = converted.replace(/'''([^']+)'''/g, "*$1*");
+  // Keep converting until no more changes or max iterations reached
+  // This allows nested plugins to be processed correctly regardless of order
+  while (converted !== previousResult && iterations < MAX_ITERATIONS) {
+    previousResult = converted;
 
-  // Convert bold: ''text'' → **text**
-  converted = converted.replace(/''([^']+)''/g, "**$1**");
+    // Convert italic first (longer pattern): '''text''' → *text*
+    converted = converted.replace(/'''([^']+)'''/g, "*$1*");
 
-  // Convert underline (3 %): %%%text%%% → <u>text</u>
-  // Must be processed before strikethrough to avoid matching %%% as %%
-  converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
+    // Convert bold: ''text'' → **text**
+    converted = converted.replace(/''([^']+)''/g, "**$1**");
 
-  // Convert strikethrough (2 %): %%text%% → ~~text~~
-  converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
+    // Convert underline (3 %): %%%text%%% → <u>text</u>
+    // Must be processed before strikethrough to avoid matching %%% as %%
+    converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
 
-  // Convert line break: &br; or &br(); → <br>
-  converted = converted.replace(/&br(\(\))?;/gi, "<br>");
+    // Convert strikethrough (2 %): %%text%% → ~~text~~
+    converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
-  // Convert line-end tilde: text~ → text<br>
-  // Only match ~ that is not preceded by ~ (to avoid ~~)
-  converted = converted.replace(/([^~])~$/g, "$1<br>");
+    // Convert line break: &br; or &br(); → <br>
+    converted = converted.replace(/&br(\(\))?;/gi, "<br>");
 
-  // Convert size: &size(20){text}; → <span style="font-size: 20px">text</span>
-  converted = converted.replace(
-    /&size\((\d+)\)\{([^}]+)\};/gi,
-    (_, size, text) => `<span style="font-size: ${size}px">${text}</span>`,
-  );
+    // Convert line-end tilde: text~ → text<br>
+    // Only match ~ that is not preceded by ~ (to avoid ~~)
+    converted = converted.replace(/([^~])~$/g, "$1<br>");
 
-  // Convert color (new style with braces):
-  // &color(color){text}; → <span style="color: color">text</span>
-  // &color(color,bgcolor){text}; → <span style="color: color; background-color: bgcolor">text</span>
-  converted = converted.replace(
-    /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/gi,
-    (_, fgColor, bgColor, text) => {
-      if (bgColor) {
-        return `<span style="color: ${fgColor}; background-color: ${bgColor}">${text}</span>`;
-      } else {
+    // Convert size: &size(20){text}; → <span style="font-size: 20px">text</span>
+    converted = converted.replace(
+      /&size\((\d+)\)\{([^}]+)\};/gi,
+      (_, size, text) => `<span style="font-size: ${size}px">${text}</span>`,
+    );
+
+    // Convert color (new style with braces):
+    // &color(color){text}; → <span style="color: color">text</span>
+    // &color(color,bgcolor){text}; → <span style="color: color; background-color: bgcolor">text</span>
+    converted = converted.replace(
+      /&color\(([^,)]+)(?:,([^)]+))?\)\{([^}]+)\};/gi,
+      (_, fgColor, bgColor, text) => {
+        if (bgColor) {
+          return `<span style="color: ${fgColor}; background-color: ${bgColor}">${text}</span>`;
+        } else {
+          return `<span style="color: ${fgColor}">${text}</span>`;
+        }
+      },
+    );
+
+    // Convert color (old style without braces):
+    // &color(color,text); → <span style="color: color">text</span>
+    converted = converted.replace(
+      /&color\(([^,)]+),([^)]+)\);/gi,
+      (_, fgColor, text) => {
         return `<span style="color: ${fgColor}">${text}</span>`;
-      }
-    },
-  );
+      },
+    );
 
-  // Convert color (old style without braces):
-  // &color(color,text); → <span style="color: color">text</span>
-  converted = converted.replace(
-    /&color\(([^,)]+),([^)]+)\);/gi,
-    (_, fgColor, text) => {
-      return `<span style="color: ${fgColor}">${text}</span>`;
-    },
-  );
+    // Convert COLOR(color):text format used in regular text
+    // COLOR(red):text applies color until next COLOR directive or end of text
+    converted = converted.replace(
+      /COLOR\(([^)]+)\):([^]*?)(?=COLOR\([^)]+\):|$)/g,
+      (_, color, text) => {
+        return `<span style="color: ${color}">${text}</span>`;
+      },
+    );
 
-  // Convert COLOR(color):text format used in regular text
-  // COLOR(red):text applies color until next COLOR directive or end of text
-  converted = converted.replace(
-    /COLOR\(([^)]+)\):([^]*?)(?=COLOR\([^)]+\):|$)/g,
-    (_, color, text) => {
-      return `<span style="color: ${color}">${text}</span>`;
-    },
-  );
+    iterations++;
+  }
 
   return converted;
 };

@@ -133,6 +133,16 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 **Notes:**
 - The `&color` plugin supports both new style (with braces) and old style (comma-separated): `&color(color){text};` and `&color(color,text);` are both supported. The old style does not support background color.
 - The `COLOR(color):` format applies color until the next `COLOR(color):` directive or end of line. Multiple consecutive color directives are supported (e.g., `COLOR(red):textCOLOR(blue):text`).
+- **Nested plugin syntax**: `&size` and `&color` can be nested within each other in any order. Other inline elements (like `&br;`, bold, italic, etc.) can also be included inside nested plugins.
+
+**Nested Plugin Examples:**
+
+| PukiWiki | Markdown |
+|----------|----------|
+| `&color(red){&size(20){text};};` | `<span style="color: red"><span style="font-size: 20px">text</span></span>` |
+| `&size(20){&color(red){text};};` | `<span style="font-size: 20px"><span style="color: red">text</span></span>` |
+| `&color(red){&size(20){text1&br;text2};};` | `<span style="color: red"><span style="font-size: 20px">text1<br>text2</span></span>` |
+| `&size(20){&color(blue){''bold''};};` | `<span style="font-size: 20px"><span style="color: blue">**bold**</span></span>` |
 
 ### Comments
 

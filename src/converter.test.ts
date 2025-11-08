@@ -1254,6 +1254,74 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("nested plugin conversion", () => {
+    it("should convert nested &color and &size (color inside size)", () => {
+      const input = "&size(20){&color(red){テキスト};};";
+      const expected =
+        '<span style="font-size: 20px"><span style="color: red">テキスト</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert nested &color and &size (size inside color)", () => {
+      const input = "&color(red){&size(20){テキスト};};";
+      const expected =
+        '<span style="color: red"><span style="font-size: 20px">テキスト</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert nested plugins with &br inside", () => {
+      const input = "&color(red){&size(20){text1&br;text2};};";
+      const expected =
+        '<span style="color: red"><span style="font-size: 20px">text1<br>text2</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert 3-level nested plugins", () => {
+      const input = "&color(blue){&size(20){''太字''};};";
+      const expected =
+        '<span style="color: blue"><span style="font-size: 20px">**太字**</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert multiple nested plugins in one line", () => {
+      const input =
+        "&color(red){&size(20){赤};};と&color(blue){&size(30){青};};";
+      const expected =
+        '<span style="color: red"><span style="font-size: 20px">赤</span></span>と<span style="color: blue"><span style="font-size: 30px">青</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert nested color with background color", () => {
+      const input = "&color(red,yellow){&size(20){テキスト};};";
+      const expected =
+        '<span style="color: red; background-color: yellow"><span style="font-size: 20px">テキスト</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert complex nested structure with old style color", () => {
+      const input = "&size(20){&color(red,テキスト);};";
+      const expected =
+        '<span style="font-size: 20px"><span style="color: red">テキスト</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert nested plugin with mixed content", () => {
+      const input =
+        "&color(red){&size(10){テキスト1};テキスト2&size(20){テキスト3};};";
+      const expected =
+        '<span style="color: red"><span style="font-size: 10px">テキスト1</span>テキスト2<span style="font-size: 20px">テキスト3</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert size with multiple nested colors", () => {
+      const input =
+        "&size(20){&color(red){テキスト1};テキスト2&color(green){テキスト3};};";
+      const expected =
+        '<span style="font-size: 20px"><span style="color: red">テキスト1</span>テキスト2<span style="color: green">テキスト3</span></span>';
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+  });
+
   describe("link conversion", () => {
     describe("internal links", () => {
       it("should convert simple internal link (same directory)", () => {
