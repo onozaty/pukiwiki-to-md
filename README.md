@@ -5,6 +5,8 @@
 [![npm version](https://badge.fury.io/js/@onozaty%2Fpukiwiki-to-md.svg)](https://www.npmjs.com/package/@onozaty/pukiwiki-to-md)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+[日本語版 README](README.ja.md)
+
 A command-line tool to convert PukiWiki pages and attachments to Markdown format.
 
 ## Features
@@ -14,7 +16,7 @@ A command-line tool to convert PukiWiki pages and attachments to Markdown format
 - 📎 **Process Attachments** - Automatically handle attached files
 - 🌍 **Encoding Support** - Works with UTF-8 and EUC-JP encoded files
 - 🗑️ **Auto-Exclude System Pages** - Filters out `:config`, `:RenameLog`, etc.
-- 🧹 **Remove System Directives** - Strips `#author`, `#freeze`, and similar directives
+- 🧹 **Comment Unsupported Block Plugins** - Converts system directives and other unsupported block plugins to HTML comments (use `--strip-comments` to drop them entirely)
 
 ## Installation
 
