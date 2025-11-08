@@ -63,7 +63,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 **UTF-8 でエンコードされた PukiWiki を変換:**
 
 ```bash
-npx @onozaty/pukiwiki-to-md -w ./pukiwiki/wiki -a ./pukiwiki/attach -o ./output
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output
 ```
 
 **EUC-JP でエンコードされた PukiWiki を変換:**

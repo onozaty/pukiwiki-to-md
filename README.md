@@ -63,7 +63,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 **Convert UTF-8 encoded PukiWiki:**
 
 ```bash
-npx @onozaty/pukiwiki-to-md -w ./pukiwiki/wiki -a ./pukiwiki/attach -o ./output
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output
 ```
 
 **Convert EUC-JP encoded PukiWiki:**
