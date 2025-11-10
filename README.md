@@ -133,6 +133,7 @@ Converts PukiWiki headings to Markdown, automatically removing anchor IDs:
 | `COLOR(red):text` | `<span style="color: red">text</span>` |
 
 **Notes:**
+- **Spacing around emphasis markers**: Spaces are automatically added before and after bold (`**`), italic (`*`), and strikethrough (`~~`) markers to ensure proper Markdown rendering, unless spaces already exist or the markers are at the start/end of a line. For example, `これは''太字''です` becomes `これは **太字** です`.
 - The `&color` plugin supports both new style (with braces) and old style (comma-separated): `&color(color){text};` and `&color(color,text);` are both supported. The old style does not support background color.
 - The `COLOR(color):` format applies color until the next `COLOR(color):` directive or end of line. Multiple consecutive color directives are supported (e.g., `COLOR(red):textCOLOR(blue):text`).
 - **Nested plugin syntax**: `&size` and `&color` can be nested within each other in any order. Other inline elements (like `&br;`, bold, italic, etc.) can also be included inside nested plugins.

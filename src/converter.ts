@@ -779,27 +779,59 @@ const convertInlineFormat = (text: string): string => {
   let iterations = 0;
   const MAX_ITERATIONS = 10; // Safety limit to prevent infinite loops
 
-  // Keep converting until no more changes or max iterations reached
+  // Helper function to add spaces around emphasis markers
+  // Adds spaces unless already present or at line boundaries
+  const addSpacesAroundMarker = (
+    match: string,
+    content: string,
+    offset: number,
+    original: string,
+    marker: string,
+  ): string => {
+    const before = offset > 0 ? original[offset - 1] : "";
+    const after =
+      offset + match.length < original.length
+        ? original[offset + match.length]
+        : "";
+    const needSpaceBefore = before !== "" && before !== " ";
+    const needSpaceAfter = after !== "" && after !== " ";
+    return `${needSpaceBefore ? " " : ""}${marker}${content}${marker}${needSpaceAfter ? " " : ""}`;
+  };
+
+  // First, process non-nested inline formats (these don't need to be in the loop)
+  // Convert italic first (longer pattern): '''text''' → *text*
+  converted = converted.replace(
+    /'''([^']+)'''/g,
+    (match, content, offset, original) =>
+      addSpacesAroundMarker(match, content, offset, original, "*"),
+  );
+
+  // Convert bold: ''text'' → **text**
+  converted = converted.replace(
+    /''([^']+)''/g,
+    (match, content, offset, original) =>
+      addSpacesAroundMarker(match, content, offset, original, "**"),
+  );
+
+  // Convert underline (3 %): %%%text%%% → <u>text</u>
+  // Must be processed before strikethrough to avoid matching %%% as %%
+  converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
+
+  // Convert line-end tilde: text~ → text<br>
+  // Must be processed before strikethrough to avoid converting ~~text~~ to ~~text~<br>
+  converted = converted.replace(/~$/g, "<br>");
+
+  // Convert strikethrough (2 %): %%text%% → ~~text~~
+  converted = converted.replace(
+    /%%([^%]+)%%/g,
+    (match, content, offset, original) =>
+      addSpacesAroundMarker(match, content, offset, original, "~~"),
+  );
+
+  // Then, process nested plugins in a loop
   // This allows nested plugins to be processed correctly regardless of order
   while (converted !== previousResult && iterations < MAX_ITERATIONS) {
     previousResult = converted;
-
-    // Convert italic first (longer pattern): '''text''' → *text*
-    converted = converted.replace(/'''([^']+)'''/g, "*$1*");
-
-    // Convert bold: ''text'' → **text**
-    converted = converted.replace(/''([^']+)''/g, "**$1**");
-
-    // Convert underline (3 %): %%%text%%% → <u>text</u>
-    // Must be processed before strikethrough to avoid matching %%% as %%
-    converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
-
-    // Convert line-end tilde: text~ → text<br>
-    // Must be processed before strikethrough to avoid converting ~~text~~ to ~~text~<br>
-    converted = converted.replace(/~$/g, "<br>");
-
-    // Convert strikethrough (2 %): %%text%% → ~~text~~
-    converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
     // Convert line break: &br; or &br(); → <br>
     converted = converted.replace(/&br(\(\))?;/gi, "<br>");

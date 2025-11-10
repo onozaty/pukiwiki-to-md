@@ -748,7 +748,7 @@ describe("convertToMarkdown", () => {
 
     it("should combine with other inline formats", () => {
       const input = "''太字''のテキスト~";
-      const expected = "**太字**のテキスト<br>";
+      const expected = "**太字** のテキスト<br>";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -1001,7 +1001,7 @@ describe("convertToMarkdown", () => {
 
     it("should handle alignment with inline formatting", () => {
       const input = "CENTER:''太字''テキスト";
-      const expected = "**太字**テキスト";
+      const expected = "**太字** テキスト";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1060,19 +1060,19 @@ describe("convertToMarkdown", () => {
   describe("inline text formatting", () => {
     it("should convert bold text", () => {
       const input = "これは''太字''です";
-      const expected = "これは**太字**です";
+      const expected = "これは **太字** です";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert italic text", () => {
       const input = "これは'''イタリック'''です";
-      const expected = "これは*イタリック*です";
+      const expected = "これは *イタリック* です";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert strikethrough text", () => {
       const input = "これは%%取り消し%%です";
-      const expected = "これは~~取り消し~~です";
+      const expected = "これは ~~取り消し~~ です";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1108,13 +1108,55 @@ describe("convertToMarkdown", () => {
 
     it("should convert multiple formatting in one line", () => {
       const input = "''太字''と'''イタリック'''と%%取り消し%%と%%%下線%%%";
-      const expected = "**太字**と*イタリック*と~~取り消し~~と<u>下線</u>";
+      const expected = "**太字** と *イタリック* と ~~取り消し~~ と<u>下線</u>";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should handle inline formatting in headings", () => {
       const input = "*''太字の見出し''";
       const expected = "# **太字の見出し**";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add spaces around bold markers with punctuation", () => {
+      const input = "''「太字です」''";
+      const expected = "**「太字です」**";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add spaces around bold markers with alphanumeric", () => {
+      const input = "text''bold''text";
+      const expected = "text **bold** text";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add spaces when already present", () => {
+      const input = "これは ''太字'' です";
+      const expected = "これは **太字** です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add space at line start", () => {
+      const input = "''太字''です";
+      const expected = "**太字** です";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add space at line end", () => {
+      const input = "これは''太字''";
+      const expected = "これは **太字**";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add spaces around italic markers with punctuation", () => {
+      const input = "'''(italic)'''";
+      const expected = "*(italic)*";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add spaces around strikethrough markers with punctuation", () => {
+      const input = "%%[削除]%%";
+      const expected = "~~[削除]~~";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1126,7 +1168,7 @@ describe("convertToMarkdown", () => {
 
     it("should handle inline formatting in lists", () => {
       const input = "-''太字''の項目";
-      const expected = "- **太字**の項目";
+      const expected = "- **太字** の項目";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1138,7 +1180,7 @@ describe("convertToMarkdown", () => {
 
     it("should handle inline formatting in quotes", () => {
       const input = ">''太字''の引用";
-      const expected = "> **太字**の引用";
+      const expected = "> **太字** の引用";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1163,7 +1205,7 @@ describe("convertToMarkdown", () => {
 
     it("should convert &size with other inline formats", () => {
       const input = "''太字''と&size(20){大きい};";
-      const expected = '**太字**と<span style="font-size: 20px">大きい</span>';
+      const expected = '**太字** と<span style="font-size: 20px">大きい</span>';
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1208,7 +1250,7 @@ describe("convertToMarkdown", () => {
 
     it("should convert &color with other inline formats", () => {
       const input = "''太字''と&color(red){赤};";
-      const expected = '**太字**と<span style="color: red">赤</span>';
+      const expected = '**太字** と<span style="color: red">赤</span>';
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1297,7 +1339,7 @@ describe("convertToMarkdown", () => {
     it("should convert 3-level nested plugins", () => {
       const input = "&color(blue){&size(20){''太字''};};";
       const expected =
-        '<span style="color: blue"><span style="font-size: 20px">**太字**</span></span>';
+        '<span style="color: blue"><span style="font-size: 20px"> **太字** </span></span>';
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -1459,7 +1501,7 @@ describe("convertToMarkdown", () => {
 
       it("should handle links with other inline formatting", () => {
         const input = "''太字''の[[リンク]]";
-        const expected = "**太字**の[リンク](リンク.md)";
+        const expected = "**太字** の[リンク](リンク.md)";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
     });
@@ -1877,7 +1919,7 @@ describe("convertToMarkdown", () => {
 
       it("should handle attachments with other inline formatting", () => {
         const input = "''太字''の&ref(image.png);";
-        const expected = "**太字**の![image.png](テスト_attachment_image.png)";
+        const expected = "**太字** の![image.png](テスト_attachment_image.png)";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
     });
