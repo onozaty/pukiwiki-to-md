@@ -710,7 +710,13 @@ describe("convertToMarkdown", () => {
 
     it("should keep ~ alone on a line", () => {
       const input = "~";
-      const expected = "~";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should remove ~ before whitespace", () => {
+      const input = "~   ";
+      const expected = "   ";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -760,7 +766,19 @@ describe("convertToMarkdown", () => {
 
     it("should handle empty line with ~", () => {
       const input = "~";
-      const expected = "~";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert ~~ to <br>", () => {
+      const input = "~~";
+      const expected = "<br>";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should convert ~~~ to ~<br>", () => {
+      const input = "~~~";
+      const expected = "~<br>";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 

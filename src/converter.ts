@@ -643,14 +643,14 @@ const convertLineHeadEscape = (
   line: string,
   pageName: string,
 ): ConversionResult => {
-  // Don't process empty ~ or ~ with only whitespace after it
-  const trimmed = line.trimEnd();
-  if (trimmed === "~") return { matched: false };
-
   if (!line.startsWith("~")) return { matched: false };
 
   const restOfLine = line.substring(1);
   if (restOfLine.length === 0) return { matched: false };
+
+  // Only ~ alone (without any characters after it, not even whitespace) should not be processed
+  // ~ followed by whitespace should be processed (~ is removed, whitespace remains)
+  if (line === "~") return { matched: false };
 
   const firstChar = restOfLine.charAt(0);
   // Markdown characters that need escaping at line start
@@ -794,15 +794,15 @@ const convertInlineFormat = (text: string): string => {
     // Must be processed before strikethrough to avoid matching %%% as %%
     converted = converted.replace(/%%%([^%]+)%%%/g, "<u>$1</u>");
 
+    // Convert line-end tilde: text~ → text<br>
+    // Must be processed before strikethrough to avoid converting ~~text~~ to ~~text~<br>
+    converted = converted.replace(/~$/g, "<br>");
+
     // Convert strikethrough (2 %): %%text%% → ~~text~~
     converted = converted.replace(/%%([^%]+)%%/g, "~~$1~~");
 
     // Convert line break: &br; or &br(); → <br>
     converted = converted.replace(/&br(\(\))?;/gi, "<br>");
-
-    // Convert line-end tilde: text~ → text<br>
-    // Only match ~ that is not preceded by ~ (to avoid ~~)
-    converted = converted.replace(/([^~])~$/g, "$1<br>");
 
     // Convert size: &size(20){text}; → <span style="font-size: 20px">text</span>
     converted = converted.replace(
