@@ -1,6 +1,6 @@
 {
   "name": "@onozaty/pukiwiki-to-md",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A converter from PukiWiki to Markdown",
   "type": "module",
   "bin": {
