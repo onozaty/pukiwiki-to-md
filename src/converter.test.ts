@@ -2135,6 +2135,20 @@ describe("convertToMarkdown", () => {
         const expected = "|  |  |\n| --- | --- |\n|  | 通常 |";
         expect(convertToMarkdown(input, "テスト")).toBe(expected);
       });
+
+      it("should combine alignment with BGCOLOR", () => {
+        const input = "|RIGHT:BGCOLOR(red):テキスト|CENTER:SIZE(20):テキスト|";
+        const expected =
+          '|  |  |\n| ---: | :---: |\n| テキスト <!-- BGCOLOR(red) --> | <span style="font-size: 20px">テキスト</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle alignment after other formatting", () => {
+        const input = "|BGCOLOR(red):RIGHT:テキスト|SIZE(20):CENTER:テキスト|";
+        const expected =
+          '|  |  |\n| ---: | :---: |\n| テキスト <!-- BGCOLOR(red) --> | <span style="font-size: 20px">テキスト</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
     });
 
     describe("table cells with #ref plugin", () => {

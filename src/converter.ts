@@ -1400,39 +1400,56 @@ const parseTableCell = (cellText: string): TableCell => {
   let color: string | undefined = undefined;
   let bgColor: string | undefined = undefined;
 
-  // Detect alignment specification (must be first)
-  const alignMatch = content.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
+  // Process formatting prefixes in order (they can be chained)
+  // Keep processing until no more prefixes are found
   let align: "left" | "center" | "right" | undefined = undefined;
-  if (alignMatch && alignMatch[1] && alignMatch[2] !== undefined) {
-    align = alignMatch[1].toLowerCase() as "left" | "center" | "right";
-    content = alignMatch[2];
-  }
+  let foundPrefix = true;
+  while (foundPrefix) {
+    foundPrefix = false;
 
-  // Detect BOLD:
-  if (content.startsWith("BOLD:")) {
-    isBold = true;
-    content = content.substring(5);
-  }
+    // Detect alignment specification
+    const alignMatch = content.match(/^(LEFT|CENTER|RIGHT):(.*)$/);
+    if (alignMatch && alignMatch[1] && alignMatch[2] !== undefined) {
+      align = alignMatch[1].toLowerCase() as "left" | "center" | "right";
+      content = alignMatch[2];
+      foundPrefix = true;
+      continue;
+    }
 
-  // Detect SIZE(n):
-  const sizeMatch = content.match(/^SIZE\((\d+)\):(.*)$/);
-  if (sizeMatch && sizeMatch[1] && sizeMatch[2] !== undefined) {
-    fontSize = sizeMatch[1];
-    content = sizeMatch[2];
-  }
+    // Detect BOLD:
+    if (content.startsWith("BOLD:")) {
+      isBold = true;
+      content = content.substring(5);
+      foundPrefix = true;
+      continue;
+    }
 
-  // Detect COLOR(color):
-  const colorMatch = content.match(/^COLOR\(([^)]+)\):(.*)$/);
-  if (colorMatch && colorMatch[1] && colorMatch[2] !== undefined) {
-    color = colorMatch[1];
-    content = colorMatch[2];
-  }
+    // Detect SIZE(n):
+    const sizeMatch = content.match(/^SIZE\((\d+)\):(.*)$/);
+    if (sizeMatch && sizeMatch[1] && sizeMatch[2] !== undefined) {
+      fontSize = sizeMatch[1];
+      content = sizeMatch[2];
+      foundPrefix = true;
+      continue;
+    }
 
-  // Detect BGCOLOR(color):
-  const bgColorMatch = content.match(/^BGCOLOR\(([^)]+)\):(.*)$/);
-  if (bgColorMatch && bgColorMatch[1] && bgColorMatch[2] !== undefined) {
-    bgColor = bgColorMatch[1];
-    content = bgColorMatch[2];
+    // Detect COLOR(color):
+    const colorMatch = content.match(/^COLOR\(([^)]+)\):(.*)$/);
+    if (colorMatch && colorMatch[1] && colorMatch[2] !== undefined) {
+      color = colorMatch[1];
+      content = colorMatch[2];
+      foundPrefix = true;
+      continue;
+    }
+
+    // Detect BGCOLOR(color):
+    const bgColorMatch = content.match(/^BGCOLOR\(([^)]+)\):(.*)$/);
+    if (bgColorMatch && bgColorMatch[1] && bgColorMatch[2] !== undefined) {
+      bgColor = bgColorMatch[1];
+      content = bgColorMatch[2];
+      foundPrefix = true;
+      continue;
+    }
   }
 
   // Detect ~ header cell
