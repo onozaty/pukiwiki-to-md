@@ -675,7 +675,7 @@ const convertLineHeadEscape = (
  * Convert horizontal rule from PukiWiki to Markdown
  *
  * PukiWiki: ---- (4 or more hyphens) or #hr or #hr()
- * Markdown: ---
+ * Markdown: ***
  *
  * No inline processing needed (simple horizontal rule).
  *
@@ -692,13 +692,13 @@ const convertHorizontalRule = (
   // Match ---- (4 or more hyphens), with or without trailing text
   // Trailing text is discarded (PukiWiki behavior)
   if (/^-{4,}/.test(trimmed)) {
-    return { matched: true, lines: ["---"] };
+    return { matched: true, lines: ["***"] };
   }
 
   // Match #hr, #hr(), or #hr() with trailing text
   // Does NOT match #hrxxx or #hr text
   if (/^#hr(\(\).*)?$/i.test(trimmed)) {
-    return { matched: true, lines: ["---"] };
+    return { matched: true, lines: ["***"] };
   }
 
   return { matched: false };

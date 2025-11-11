@@ -90,49 +90,49 @@ describe("convertToMarkdown", () => {
   describe("horizontal rule conversion", () => {
     it("should convert 4 hyphens horizontal rule", () => {
       const input = "----";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert 5 or more hyphens", () => {
       const input = "-----";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should handle horizontal rule with trailing spaces", () => {
       const input = "----   ";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert #hr plugin to horizontal rule", () => {
       const input = "#hr";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert #hr() plugin to horizontal rule", () => {
       const input = "#hr()";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert #hr with trailing spaces", () => {
       const input = "#hr  ";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert #hr() with trailing spaces", () => {
       const input = "#hr()  ";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should convert #hr() with trailing text", () => {
       const input = "#hr() 追加テキスト";
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
@@ -160,14 +160,14 @@ describe("convertToMarkdown", () => {
     it("should discard trailing text after ---- without inline formatting", () => {
       const input = "---- ''太字''";
       // ---- matches and discards trailing text (PukiWiki behavior)
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
     it("should discard trailing text after #hr() without inline formatting", () => {
       const input = "#hr() [[リンク]]";
       // #hr() matches and discards trailing text (not converted to separate line)
-      const expected = "---";
+      const expected = "***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
   });
@@ -1039,7 +1039,7 @@ describe("convertToMarkdown", () => {
   describe("mixed conversions", () => {
     it("should handle multiple syntax types in one content", () => {
       const input = "*見出し\n\n普通のテキスト\n\n>引用\n\n----";
-      const expected = "# 見出し\n\n普通のテキスト\n\n> 引用\n\n---";
+      const expected = "# 見出し\n\n普通のテキスト\n\n> 引用\n\n***";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 

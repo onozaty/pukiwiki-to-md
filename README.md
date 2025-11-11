@@ -311,8 +311,8 @@ When `#ref` is used at the start of a cell, it's processed as a block plugin. Te
 
 | PukiWiki | Markdown |
 |----------|----------|
-| `----` | `---` |
-| `#hr` or `#hr()` | `---` |
+| `----` | `***` |
+| `#hr` or `#hr()` | `***` |
 
 ### Line Breaks
 
