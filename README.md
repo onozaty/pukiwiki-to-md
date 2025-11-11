@@ -1,6 +1,6 @@
 # pukiwiki-to-md
 
-[日本語](README.ja.md) | English
+English | [日本語](README.ja.md)
 
 [![test](https://github.com/onozaty/pukiwiki-to-md/actions/workflows/test.yaml/badge.svg)](https://github.com/onozaty/pukiwiki-to-md/actions/workflows/test.yaml)
 [![codecov](https://codecov.io/gh/onozaty/pukiwiki-to-md/graph/badge.svg?token=19VZNQCMUN)](https://codecov.io/gh/onozaty/pukiwiki-to-md)
@@ -55,6 +55,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 | `--encoding <encoding>` | `-e` | `utf-8` | Input file encoding (utf-8 or euc-jp) |
 | `--exclude-plugins <list>` | `-x` | (empty) | Comma-separated custom block plugins to exclude |
 | `--strip-comments` | `-s` | `false` | Remove all HTML comments from output |
+| `--convert-ls2-to-lsx` | | `false` | Convert PukiWiki `#ls2` plugin to GROWI `$lsx` format |
 | `--help` | `-h` | | Display help information |
 | `--version` | `-v` | | Display version number |
 
@@ -82,6 +83,12 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,custo
 
 ```bash
 npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -s
+```
+
+**Convert #ls2 plugin to GROWI $lsx format:**
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output --convert-ls2-to-lsx
 ```
 
 ## Conversion Features
@@ -433,7 +440,7 @@ The following block plugins cannot be represented in Markdown and are converted 
 **Lists & navigation:**
 - `#back` - Back link
 - `#ls` - Child page list
-- `#ls2` - Child page list (enhanced)
+- `#ls2` - Child page list (enhanced) - Can be converted to GROWI `$lsx` format with `--convert-ls2-to-lsx` option
 - `#menu` - Menu display
 - `#online` - Online users display
 - `#popular` - Popular pages ranking
@@ -489,6 +496,27 @@ Input:  #freeze additional text
 Output: #freeze additional text
         (not converted, remains as-is)
 ```
+
+#### GROWI lsx Conversion
+
+When using the `--convert-ls2-to-lsx` option, PukiWiki `#ls2` plugin is converted to GROWI `$lsx` format with relative paths:
+
+| PukiWiki | GROWI lsx | Notes |
+|----------|-----------|-------|
+| `#ls2` | `$lsx(./)` | Current page children |
+| `#ls2()` | `$lsx(./)` | Current page children |
+| `#ls2(Project/Task)` | `$lsx(./relative/path)` | Relative path calculated |
+| `#ls2(Page, reverse)` | `$lsx(./relative/path, reverse=true)` | Supported option |
+| `#ls2(Page, title)` | `<!-- #ls2(Page, title) -->`<br>`$lsx(./relative/path)` | Unsupported option preserved as comment |
+
+**Supported options:**
+- `reverse` → `reverse=true`
+
+**Unsupported options (preserved as HTML comment):**
+- `title` - Heading list display
+- `include` - Include page list
+- `compact` - Compact display
+- `link` - Link display
 
 **Custom Plugin Exclusion:**
 

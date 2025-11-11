@@ -1,6 +1,6 @@
 # pukiwiki-to-md
 
-日本語 | [English](README.md)
+[English](README.md) | 日本語
 
 [![test](https://github.com/onozaty/pukiwiki-to-md/actions/workflows/test.yaml/badge.svg)](https://github.com/onozaty/pukiwiki-to-md/actions/workflows/test.yaml)
 [![codecov](https://codecov.io/gh/onozaty/pukiwiki-to-md/graph/badge.svg?token=19VZNQCMUN)](https://codecov.io/gh/onozaty/pukiwiki-to-md)
@@ -55,6 +55,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 | `--encoding <encoding>` | `-e` | `utf-8` | 入力ファイルの文字コード(utf-8 または euc-jp) |
 | `--exclude-plugins <list>` | `-x` | (空) | 除外するカスタムブロックプラグインをカンマ区切りで指定 |
 | `--strip-comments` | `-s` | `false` | 出力からすべての HTML コメントを削除 |
+| `--convert-ls2-to-lsx` | | `false` | PukiWiki の `#ls2` プラグインを GROWI の `$lsx` 形式に変換 |
 | `--help` | `-h` | | ヘルプを表示 |
 | `--version` | `-v` | | バージョン番号を表示 |
 
@@ -82,6 +83,12 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,custo
 
 ```bash
 npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -s
+```
+
+**#ls2 プラグインを GROWI $lsx 形式に変換:**
+
+```bash
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output --convert-ls2-to-lsx
 ```
 
 ## 変換機能
@@ -433,7 +440,7 @@ Markdown で表現できない以下のブロックプラグインは HTML コ�
 **リスト・ナビゲーション:**
 - `#back` - 戻るリンク
 - `#ls` - 子ページ一覧
-- `#ls2` - 子ページ一覧(拡張)
+- `#ls2` - 子ページ一覧(拡張) - `--convert-ls2-to-lsx` オプションで GROWI の `$lsx` 形式に変換可能
 - `#menu` - メニュー表示
 - `#online` - オンラインユーザー表示
 - `#popular` - 人気ページランキング
@@ -489,6 +496,27 @@ Input:  #freeze additional text
 Output: #freeze additional text
 	(not converted, remains as-is)
 ```
+
+#### GROWI lsx への変換
+
+`--convert-ls2-to-lsx` オプションを使用すると、PukiWiki の `#ls2` プラグインが GROWI の `$lsx` 形式に相対パスで変換されます:
+
+| PukiWiki | GROWI lsx | 備考 |
+|----------|-----------|------|
+| `#ls2` | `$lsx(./)` | カレントページの子ページ |
+| `#ls2()` | `$lsx(./)` | カレントページの子ページ |
+| `#ls2(Project/Task)` | `$lsx(./相対パス)` | 相対パスが計算される |
+| `#ls2(Page, reverse)` | `$lsx(./相対パス, reverse=true)` | サポートされているオプション |
+| `#ls2(Page, title)` | `<!-- #ls2(Page, title) -->`<br>`$lsx(./相対パス)` | サポートされていないオプションはコメントとして保持 |
+
+**サポートされているオプション:**
+- `reverse` → `reverse=true`
+
+**サポートされていないオプション(HTMLコメントとして保持):**
+- `title` - 見出し一覧表示
+- `include` - インクルードページ一覧
+- `compact` - コンパクト表示
+- `link` - リンク表示
 
 **カスタムプラグインの除外:**
 

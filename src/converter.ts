@@ -43,6 +43,8 @@ export interface ConversionOptions {
   stripComments: boolean;
   /** Custom block plugins to exclude */
   excludeBlockPlugins: string[];
+  /** Convert PukiWiki ls2 plugin to GROWI lsx format */
+  convertLs2ToLsx: boolean;
 }
 
 /**
@@ -62,6 +64,7 @@ export const convertToMarkdown = (
   const opts: ConversionOptions = {
     stripComments: false,
     excludeBlockPlugins: [],
+    convertLs2ToLsx: false,
     ...options,
   };
   const lines = content.split("\n");
@@ -168,6 +171,7 @@ const convertLine = (
   // Try each conversion in order, stop at first match
   const blockConverters = [
     (l: string) => convertComment(l, pageName, options),
+    (l: string) => convertLs2ToLsx(l, pageName, options),
     (l: string) => convertUnsupportedBlockPlugin(l, pageName, options),
     (l: string) => convertRefBlock(l, pageName),
     (l: string) => convertVote(l, pageName, options),
@@ -505,6 +509,103 @@ const convertInclude = (
   const relativePath = calculateRelativePath(currentPage, `${pageName}.md`);
   const link = `[${escapeMarkdownLinkText(pageName)}](${relativePath})`;
   result.push(link);
+
+  return { matched: true, lines: result };
+};
+
+/**
+ * Convert #ls2 plugin to GROWI lsx format
+ *
+ * PukiWiki: #ls2() or #ls2(pattern) or #ls2(pattern,options)
+ * GROWI: $lsx(relativePath) or $lsx(relativePath, options)
+ *
+ * Supported options:
+ * - reverse → reverse=true
+ *
+ * Unsupported options (preserved as HTML comment):
+ * - title, include, compact, link
+ *
+ * @param line - Line to convert
+ * @param currentPage - Current page name for relative path calculation
+ * @param options - Conversion options
+ * @returns Conversion result (multiple lines)
+ */
+const convertLs2ToLsx = (
+  line: string,
+  currentPage: string,
+  options: ConversionOptions,
+): ConversionResult => {
+  // Only process if convertLs2ToLsx option is enabled
+  if (!options.convertLs2ToLsx) {
+    return { matched: false };
+  }
+
+  const trimmed = line.trimEnd();
+
+  // Match #ls2, #ls2(), #ls2(pattern), #ls2(pattern,options)
+  const match = trimmed.match(/^#ls2(?:\(([^)]*)\))?/i);
+  if (!match) {
+    return { matched: false };
+  }
+
+  const result: string[] = [];
+  const paramsString = match[1] || "";
+
+  // Parse parameters (pattern and options)
+  let pattern = "";
+  const unsupportedOptions: string[] = [];
+  const supportedLsxOptions: string[] = [];
+
+  if (paramsString) {
+    // Split by comma
+    const params = paramsString.split(",").map((p) => p.trim());
+
+    // First parameter is pattern (if not an option keyword)
+    if (params.length > 0 && params[0]) {
+      const firstParam = params[0].toLowerCase();
+      // Check if first param is an option keyword
+      if (
+        !["title", "include", "reverse", "compact", "link"].includes(firstParam)
+      ) {
+        pattern = params[0];
+        params.shift(); // Remove pattern from params
+      }
+    }
+
+    // Process remaining parameters as options
+    for (const param of params) {
+      const lowerParam = param.toLowerCase();
+      if (lowerParam === "reverse") {
+        supportedLsxOptions.push("reverse=true");
+      } else if (["title", "include", "compact", "link"].includes(lowerParam)) {
+        unsupportedOptions.push(param);
+      }
+    }
+  }
+
+  // Calculate relative path for the pattern
+  let relativePath = "./";
+  if (pattern) {
+    relativePath = calculateRelativePath(currentPage, pattern);
+
+    // Ensure relative path starts with ./ or ../ for GROWI lsx format
+    if (!relativePath.startsWith("./") && !relativePath.startsWith("../")) {
+      relativePath = "./" + relativePath;
+    }
+  }
+
+  // Add HTML comment if there are unsupported options (unless stripComments is enabled)
+  if (unsupportedOptions.length > 0 && !options.stripComments) {
+    result.push(`<!-- ${trimmed} -->`);
+  }
+
+  // Generate lsx syntax
+  let lsxLine = `$lsx(${relativePath}`;
+  if (supportedLsxOptions.length > 0) {
+    lsxLine += `, ${supportedLsxOptions.join(", ")}`;
+  }
+  lsxLine += ")";
+  result.push(lsxLine);
 
   return { matched: true, lines: result };
 };
@@ -945,7 +1046,7 @@ const encodePathForMarkdown = (filePath: string): string => {
  *
  * @param currentPage - Current page path (e.g., "プロジェクト/タスク")
  * @param targetFilePath - Target file path (e.g., "共通ページ.md" or "テスト_attachment_image.png")
- * @returns Relative path from current page directory to target file
+ * @returns Relative path from current page directory to target file (always uses forward slashes)
  */
 const calculateRelativePath = (
   currentPage: string,
@@ -954,13 +1055,19 @@ const calculateRelativePath = (
   // Get directory of current page
   const currentDir = path.dirname(currentPage);
 
+  let relativePath: string;
+
   // If current page is at root level, just use target path as-is
   if (currentDir === ".") {
-    return targetFilePath;
+    relativePath = targetFilePath;
+  } else {
+    // Calculate relative path from current directory to target file
+    relativePath = path.relative(currentDir, targetFilePath);
   }
 
-  // Calculate relative path from current directory to target file
-  return path.relative(currentDir, targetFilePath);
+  // Normalize path separators to forward slash for consistency
+  // (path.relative() returns backslashes on Windows)
+  return relativePath.replace(/\\/g, "/");
 };
 
 /**
