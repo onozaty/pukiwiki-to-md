@@ -506,7 +506,10 @@ const convertInclude = (
   }
 
   // Generate link to the included page (no inline processing needed)
-  const relativePath = calculateRelativePath(currentPage, `${pageName}.md`);
+  const relativePath = calculateRelativePath(
+    path.dirname(currentPage),
+    `${pageName}.md`,
+  );
   const link = `[${escapeMarkdownLinkText(pageName)}](${relativePath})`;
   result.push(link);
 
@@ -586,11 +589,22 @@ const convertLs2ToLsx = (
   // Calculate relative path for the pattern
   let relativePath = "./";
   if (pattern) {
-    relativePath = calculateRelativePath(currentPage, pattern);
+    // Remove trailing slash if present
+    const targetPage = pattern.replace(/\/$/, "");
 
-    // Ensure relative path starts with ./ or ../ for GROWI lsx format
-    if (!relativePath.startsWith("./") && !relativePath.startsWith("../")) {
-      relativePath = "./" + relativePath;
+    // If target page is the same as current page, use "./"
+    if (targetPage === currentPage) {
+      relativePath = "./";
+    } else {
+      // Pages are treated as directories in the hierarchy
+      // Current page "A/B" means directory "A/B/"
+      // Calculate relative path from current page directory to target page directory
+      relativePath = calculateRelativePath(currentPage, targetPage);
+
+      // Ensure relative path starts with ./ or ../
+      if (!relativePath.startsWith("./") && !relativePath.startsWith("../")) {
+        relativePath = "./" + relativePath;
+      }
     }
   }
 
@@ -1039,30 +1053,24 @@ const encodePathForMarkdown = (filePath: string): string => {
 };
 
 /**
- * Calculate relative path from current page to target file
+ * Calculate relative path from one directory to another path
  *
  * This is a generic function that works for any file type (pages, attachments, etc.).
- * The caller is responsible for adding file extensions if needed.
+ * The caller is responsible for providing the correct base directory and target path.
  *
- * @param currentPage - Current page path (e.g., "プロジェクト/タスク")
- * @param targetFilePath - Target file path (e.g., "共通ページ.md" or "テスト_attachment_image.png")
- * @returns Relative path from current page directory to target file (always uses forward slashes)
+ * @param fromDir - Base directory path (e.g., "." or "プロジェクト" or "A/B")
+ * @param toPath - Target path (e.g., "共通ページ.md" or "テスト_attachment_image.png")
+ * @returns Relative path from base directory to target (always uses forward slashes)
  */
-const calculateRelativePath = (
-  currentPage: string,
-  targetFilePath: string,
-): string => {
-  // Get directory of current page
-  const currentDir = path.dirname(currentPage);
-
+const calculateRelativePath = (fromDir: string, toPath: string): string => {
   let relativePath: string;
 
-  // If current page is at root level, just use target path as-is
-  if (currentDir === ".") {
-    relativePath = targetFilePath;
+  // If base directory is root level, just use target path as-is
+  if (fromDir === ".") {
+    relativePath = toPath;
   } else {
-    // Calculate relative path from current directory to target file
-    relativePath = path.relative(currentDir, targetFilePath);
+    // Calculate relative path from base directory to target
+    relativePath = path.relative(fromDir, toPath);
   }
 
   // Normalize path separators to forward slash for consistency
@@ -1099,7 +1107,7 @@ const convertLinks = (text: string, currentPage: string): string => {
     /\[\[((?:(?!\]\]).)+?)>((?:(?!\]\]).)+?)\]\]/g,
     (_, linkText, targetPage) => {
       const relativePath = calculateRelativePath(
-        currentPage,
+        path.dirname(currentPage),
         `${targetPage}.md`,
       );
       const encodedPath = encodePathForMarkdown(relativePath);
@@ -1113,7 +1121,7 @@ const convertLinks = (text: string, currentPage: string): string => {
     /\[\[((?:(?!\]\]).)+?)\]\]/g,
     (_, targetPage) => {
       const relativePath = calculateRelativePath(
-        currentPage,
+        path.dirname(currentPage),
         `${targetPage}.md`,
       );
       const encodedPath = encodePathForMarkdown(relativePath);
@@ -1335,7 +1343,10 @@ const convertAttachmentReference = (
     path.dirname(targetPagePath),
     attachmentFileName,
   );
-  const relativePath = calculateRelativePath(fullPagePath, attachmentPath);
+  const relativePath = calculateRelativePath(
+    path.dirname(fullPagePath),
+    attachmentPath,
+  );
 
   // Encode the relative path for Markdown URL
   const encodedPath = encodePathForMarkdown(relativePath);
