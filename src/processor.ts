@@ -84,7 +84,7 @@ const getAttachmentFiles = async (attachDir: string): Promise<string[]> => {
  * @param encoding - File encoding
  * @param excludeBlockPlugins - Block plugins to exclude
  * @param stripComments - Whether to remove HTML comments
- * @param convertLs2ToLsx - Convert #ls2 to GROWI $lsx format
+ * @param convertLsToLsx - Convert #ls/#ls2 to GROWI $lsx format
  * @returns Output path if successful, null if failed
  */
 const processWikiFile = async (
@@ -93,7 +93,7 @@ const processWikiFile = async (
   encoding: string,
   excludeBlockPlugins: string[],
   stripComments: boolean,
-  convertLs2ToLsx: boolean,
+  convertLsToLsx: boolean,
 ): Promise<{ success: boolean; outputPath?: string; error?: string }> => {
   try {
     const fileName = path.basename(filePath, ".txt");
@@ -117,7 +117,7 @@ const processWikiFile = async (
     const converted = convertToMarkdown(content, pageName, {
       excludeBlockPlugins,
       stripComments,
-      convertLs2ToLsx,
+      convertLsToLsx,
     });
 
     // Write as markdown
@@ -182,7 +182,7 @@ const processAttachmentFile = async (
  * @param encoding - File encoding
  * @param excludeBlockPlugins - Block plugins to exclude
  * @param stripComments - Whether to remove HTML comments
- * @param convertLs2ToLsx - Convert #ls2 to GROWI $lsx format
+ * @param convertLsToLsx - Convert #ls/#ls2 to GROWI $lsx format
  * @returns Conversion statistics
  */
 export const processConversion = async (
@@ -192,7 +192,7 @@ export const processConversion = async (
   encoding: string,
   excludeBlockPlugins: string[] = [],
   stripComments: boolean = false,
-  convertLs2ToLsx: boolean = false,
+  convertLsToLsx: boolean = false,
 ): Promise<ConversionStats> => {
   let pagesConverted = 0;
   let pageErrors = 0;
@@ -219,7 +219,7 @@ export const processConversion = async (
       encoding,
       excludeBlockPlugins,
       stripComments,
-      convertLs2ToLsx,
+      convertLsToLsx,
     );
     if (result.success) {
       console.log(`[SUCCESS] ${filePath} → ${result.outputPath} (converted)`);

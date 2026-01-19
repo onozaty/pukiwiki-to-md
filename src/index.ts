@@ -15,7 +15,7 @@ const program = new Command();
  * @param encoding - Input file encoding (default: utf-8)
  * @param excludePlugins - Comma-separated custom plugins to exclude (default: empty string)
  * @param stripComments - Whether to remove HTML comments (default: false)
- * @param convertLs2ToLsx - Convert #ls2 to GROWI $lsx format (default: false)
+ * @param convertLsToLsx - Convert #ls/#ls2 to GROWI $lsx format (default: false)
  */
 export const main = async (
   wikiPath: string,
@@ -24,7 +24,7 @@ export const main = async (
   encoding: string = "utf-8",
   excludePlugins: string = "",
   stripComments: boolean = false,
-  convertLs2ToLsx: boolean = false,
+  convertLsToLsx: boolean = false,
 ): Promise<void> => {
   // Validate input directories
   if (!(await exists(wikiPath))) {
@@ -54,8 +54,8 @@ export const main = async (
   if (stripComments) {
     console.log(`Strip comments: enabled`);
   }
-  if (convertLs2ToLsx) {
-    console.log(`Convert ls2 to lsx: enabled`);
+  if (convertLsToLsx) {
+    console.log(`Convert ls/ls2 to lsx: enabled`);
   }
   console.log();
 
@@ -67,7 +67,7 @@ export const main = async (
     encoding,
     excludeBlockPlugins,
     stripComments,
-    convertLs2ToLsx,
+    convertLsToLsx,
   );
 
   console.log();
@@ -103,8 +103,8 @@ program
     false,
   )
   .option(
-    "--convert-ls2-to-lsx",
-    "Convert PukiWiki #ls2 plugin to GROWI $lsx format",
+    "--convert-ls-to-lsx",
+    "Convert PukiWiki #ls/#ls2 plugins to GROWI $lsx format",
     false,
   )
   .action(
@@ -115,7 +115,7 @@ program
       encoding: string;
       excludePlugins: string;
       stripComments: boolean;
-      convertLs2ToLsx: boolean;
+      convertLsToLsx: boolean;
     }) => {
       try {
         await main(
@@ -125,7 +125,7 @@ program
           options.encoding,
           options.excludePlugins,
           options.stripComments,
-          options.convertLs2ToLsx,
+          options.convertLsToLsx,
         );
       } catch (error) {
         console.error(

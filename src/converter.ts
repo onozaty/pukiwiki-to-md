@@ -43,8 +43,8 @@ export interface ConversionOptions {
   stripComments: boolean;
   /** Custom block plugins to exclude */
   excludeBlockPlugins: string[];
-  /** Convert PukiWiki ls2 plugin to GROWI lsx format */
-  convertLs2ToLsx: boolean;
+  /** Convert PukiWiki ls/ls2 plugins to GROWI lsx format */
+  convertLsToLsx: boolean;
 }
 
 /**
@@ -64,7 +64,7 @@ export const convertToMarkdown = (
   const opts: ConversionOptions = {
     stripComments: false,
     excludeBlockPlugins: [],
-    convertLs2ToLsx: false,
+    convertLsToLsx: false,
     ...options,
   };
   const lines = content.split("\n");
@@ -171,6 +171,7 @@ const convertLine = (
   // Try each conversion in order, stop at first match
   const blockConverters = [
     (l: string) => convertComment(l, pageName, options),
+    (l: string) => convertLsToLsx(l, pageName, options),
     (l: string) => convertLs2ToLsx(l, pageName, options),
     (l: string) => convertUnsupportedBlockPlugin(l, pageName, options),
     (l: string) => convertRefBlock(l, pageName),
@@ -517,6 +518,60 @@ const convertInclude = (
 };
 
 /**
+ * Convert #ls plugin to GROWI lsx format
+ *
+ * PukiWiki: #ls or #ls() or #ls(title)
+ * GROWI: $lsx(relativePath)
+ *
+ * Note: #ls always lists pages under the current page (no pattern parameter)
+ *
+ * Unsupported options (preserved as HTML comment):
+ * - title (no GROWI equivalent)
+ *
+ * @param line - Line to convert
+ * @param currentPage - Current page name for relative path calculation
+ * @param options - Conversion options
+ * @returns Conversion result (multiple lines)
+ */
+const convertLsToLsx = (
+  line: string,
+  currentPage: string,
+  options: ConversionOptions,
+): ConversionResult => {
+  // Only process if convertLsToLsx option is enabled
+  if (!options.convertLsToLsx) {
+    return { matched: false };
+  }
+
+  const trimmed = line.trimEnd();
+
+  // Match #ls, #ls(), #ls(title)
+  // Use negative lookahead to exclude #ls2
+  const match = trimmed.match(/^#ls(?!2)(?:\(([^)]*)\))?/i);
+  if (!match) {
+    return { matched: false };
+  }
+
+  const result: string[] = [];
+  const paramsString = match[1] || "";
+
+  // Check if title option is specified
+  const hasTitle = paramsString.trim().toLowerCase() === "title";
+
+  // Add HTML comment if title option is present (unless stripComments is enabled)
+  if (hasTitle && !options.stripComments) {
+    result.push(`<!-- ${trimmed} -->`);
+  }
+
+  // Generate lsx syntax
+  // #ls always lists children of current page, so always use "./"
+  const lsxLine = "$lsx(./)";
+  result.push(lsxLine);
+
+  return { matched: true, lines: result };
+};
+
+/**
  * Convert #ls2 plugin to GROWI lsx format
  *
  * PukiWiki: #ls2() or #ls2(pattern) or #ls2(pattern,options)
@@ -538,8 +593,8 @@ const convertLs2ToLsx = (
   currentPage: string,
   options: ConversionOptions,
 ): ConversionResult => {
-  // Only process if convertLs2ToLsx option is enabled
-  if (!options.convertLs2ToLsx) {
+  // Only process if convertLsToLsx option is enabled
+  if (!options.convertLsToLsx) {
     return { matched: false };
   }
 

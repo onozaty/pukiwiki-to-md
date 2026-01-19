@@ -542,12 +542,6 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should convert #ls to HTML comment", () => {
-      const input = "#ls";
-      const expected = "<!-- #ls -->";
-      expect(convertToMarkdown(input, "テスト")).toBe(expected);
-    });
-
     it("should convert #newpage to HTML comment", () => {
       const input = "#newpage";
       const expected = "<!-- #newpage -->";
@@ -2568,8 +2562,100 @@ describe("convertToMarkdown", () => {
     });
   });
 
+  describe("ls to lsx conversion", () => {
+    describe("when convertLsToLsx is false (default)", () => {
+      it("should convert #ls to HTML comment", () => {
+        const input = "#ls";
+        const result = convertToMarkdown(input, "テスト");
+        expect(result).toBe("<!-- #ls -->");
+      });
+
+      it("should convert #ls() to HTML comment", () => {
+        const input = "#ls()";
+        const result = convertToMarkdown(input, "テスト");
+        expect(result).toBe("<!-- #ls() -->");
+      });
+
+      it("should convert #ls(title) to HTML comment", () => {
+        const input = "#ls(title)";
+        const result = convertToMarkdown(input, "テスト");
+        expect(result).toBe("<!-- #ls(title) -->");
+      });
+    });
+
+    describe("when convertLsToLsx is true", () => {
+      it("should convert #ls to $lsx(./)", () => {
+        const input = "#ls";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        expect(result).toBe("$lsx(./)");
+      });
+
+      it("should convert #ls() to $lsx(./)", () => {
+        const input = "#ls()";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        expect(result).toBe("$lsx(./)");
+      });
+
+      it("should convert #ls(title) with HTML comment", () => {
+        const input = "#ls(title)";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        expect(result).toBe("<!-- #ls(title) -->\n$lsx(./)");
+      });
+
+      it("should not add HTML comment when stripComments is true", () => {
+        const input = "#ls(title)";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+          stripComments: true,
+        });
+        expect(result).not.toContain("<!--");
+        expect(result).toBe("$lsx(./)");
+      });
+
+      it("should handle case-insensitive #LS", () => {
+        const input = "#LS()";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        expect(result).toBe("$lsx(./)");
+      });
+
+      it("should handle case-insensitive TITLE option", () => {
+        const input = "#ls(TITLE)";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        expect(result).toBe("<!-- #ls(TITLE) -->\n$lsx(./)");
+      });
+
+      it("should convert #ls from nested page", () => {
+        const input = "#ls";
+        const result = convertToMarkdown(input, "Project/Task", {
+          convertLsToLsx: true,
+        });
+        // #ls always lists children of current page
+        expect(result).toBe("$lsx(./)");
+      });
+
+      it("should not match #ls2 when processing #ls", () => {
+        const input = "#ls2(Project)";
+        const result = convertToMarkdown(input, "テスト", {
+          convertLsToLsx: true,
+        });
+        // Should be processed by ls2 converter, not ls converter
+        expect(result).toContain("Project");
+      });
+    });
+  });
+
   describe("ls2 to lsx conversion", () => {
-    describe("when convertLs2ToLsx is false (default)", () => {
+    describe("when convertLsToLsx is false (default)", () => {
       it("should convert #ls2 to HTML comment", () => {
         const input = "#ls2";
         const result = convertToMarkdown(input, "テスト");
@@ -2589,11 +2675,11 @@ describe("convertToMarkdown", () => {
       });
     });
 
-    describe("when convertLs2ToLsx is true", () => {
+    describe("when convertLsToLsx is true", () => {
       it("should convert #ls2 to $lsx(./)", () => {
         const input = "#ls2";
         const result = convertToMarkdown(input, "テスト", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("$lsx(./)");
       });
@@ -2601,7 +2687,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2() to $lsx(./)", () => {
         const input = "#ls2()";
         const result = convertToMarkdown(input, "テスト", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("$lsx(./)");
       });
@@ -2609,7 +2695,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2(pattern) with child page to relative path", () => {
         const input = "#ls2(Project/Task/SubPage)";
         const result = convertToMarkdown(input, "Project/Task", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // Project/Task page is treated as directory "Project/Task/"
         // From "Project/Task/" to "Project/Task/SubPage/" is "./SubPage"
@@ -2619,7 +2705,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2(pattern) with sibling page to relative path", () => {
         const input = "#ls2(Project/Other)";
         const result = convertToMarkdown(input, "Project/Task", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // Project/Task page is treated as directory "Project/Task/"
         // From "Project/Task/" to "Project/Other/" is "../Other"
@@ -2629,7 +2715,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2(pattern) with parent directory to relative path", () => {
         const input = "#ls2(Project)";
         const result = convertToMarkdown(input, "Project/Task/SubTask", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // Project/Task/SubTask page is treated as directory "Project/Task/SubTask/"
         // From "Project/Task/SubTask/" to "Project/" is "../.."
@@ -2639,7 +2725,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2(pattern) from root page to relative path", () => {
         const input = "#ls2(Project/Task)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // TopPage page is treated as directory "TopPage/"
         // From "TopPage/" to "Project/Task/" is "../Project/Task"
@@ -2649,7 +2735,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2 with reverse option", () => {
         const input = "#ls2(Project, reverse)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // TopPage page is treated as directory "TopPage/"
         // From "TopPage/" to "Project/" is "../Project"
@@ -2659,7 +2745,7 @@ describe("convertToMarkdown", () => {
       it("should convert #ls2 with reverse option and no pattern", () => {
         const input = "#ls2(reverse)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("$lsx(./, reverse=true)");
       });
@@ -2667,7 +2753,7 @@ describe("convertToMarkdown", () => {
       it("should preserve unsupported options as HTML comment", () => {
         const input = "#ls2(Project, title)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("<!-- #ls2(Project, title) -->\n$lsx(../Project)");
       });
@@ -2675,7 +2761,7 @@ describe("convertToMarkdown", () => {
       it("should preserve multiple unsupported options as HTML comment", () => {
         const input = "#ls2(Project, title, include, compact)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe(
           "<!-- #ls2(Project, title, include, compact) -->\n$lsx(../Project)",
@@ -2685,7 +2771,7 @@ describe("convertToMarkdown", () => {
       it("should convert mixed supported and unsupported options", () => {
         const input = "#ls2(Project, reverse, title)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe(
           "<!-- #ls2(Project, reverse, title) -->\n$lsx(../Project, reverse=true)",
@@ -2695,7 +2781,7 @@ describe("convertToMarkdown", () => {
       it("should not add HTML comment when stripComments is true", () => {
         const input = "#ls2(Project, title)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
           stripComments: true,
         });
         expect(result).not.toContain("<!--");
@@ -2705,7 +2791,7 @@ describe("convertToMarkdown", () => {
       it("should handle link option as unsupported", () => {
         const input = "#ls2(Project, link)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("<!-- #ls2(Project, link) -->\n$lsx(../Project)");
       });
@@ -2713,7 +2799,7 @@ describe("convertToMarkdown", () => {
       it("should handle case-insensitive option matching", () => {
         const input = "#ls2(Project, REVERSE)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("$lsx(../Project, reverse=true)");
       });
@@ -2721,7 +2807,7 @@ describe("convertToMarkdown", () => {
       it("should handle case-insensitive #LS2", () => {
         const input = "#LS2(Project)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         expect(result).toBe("$lsx(../Project)");
       });
@@ -2729,7 +2815,7 @@ describe("convertToMarkdown", () => {
       it("should normalize backslashes to forward slashes in path", () => {
         const input = "#ls2(Project\\Task)";
         const result = convertToMarkdown(input, "TopPage", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // On Windows, path might contain backslashes, but we normalize them
         expect(result).toMatch(/\$lsx\(\.\.\/Project\/Task\)/);
@@ -2738,7 +2824,7 @@ describe("convertToMarkdown", () => {
       it("should convert A/B page with pattern C to ../../C", () => {
         const input = "#ls2(C)";
         const result = convertToMarkdown(input, "A/B", {
-          convertLs2ToLsx: true,
+          convertLsToLsx: true,
         });
         // A/B page is treated as directory "A/B/"
         // From "A/B/" to "C/" is "../../C"

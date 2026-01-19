@@ -55,7 +55,7 @@ npx @onozaty/pukiwiki-to-md -w <wiki-folder> -a <attach-folder> -o <output-folde
 | `--encoding <encoding>` | `-e` | `utf-8` | Input file encoding (utf-8 or euc-jp) |
 | `--exclude-plugins <list>` | `-x` | (empty) | Comma-separated custom block plugins to exclude |
 | `--strip-comments` | `-s` | `false` | Remove all HTML comments from output |
-| `--convert-ls2-to-lsx` | | `false` | Convert PukiWiki `#ls2` plugin to GROWI `$lsx` format |
+| `--convert-ls-to-lsx` | | `false` | Convert PukiWiki `#ls`/`#ls2` plugins to GROWI `$lsx` format |
 | `--help` | `-h` | | Display help information |
 | `--version` | `-v` | | Display version number |
 
@@ -85,10 +85,10 @@ npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -x "myplugin,custo
 npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output -s
 ```
 
-**Convert #ls2 plugin to GROWI $lsx format:**
+**Convert #ls/#ls2 plugins to GROWI $lsx format:**
 
 ```bash
-npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output --convert-ls2-to-lsx
+npx @onozaty/pukiwiki-to-md -w ./wiki -a ./attach -o ./output --convert-ls-to-lsx
 ```
 
 ## Conversion Features
@@ -439,8 +439,8 @@ The following block plugins cannot be represented in Markdown and are converted 
 
 **Lists & navigation:**
 - `#back` - Back link
-- `#ls` - Child page list
-- `#ls2` - Child page list (enhanced) - Can be converted to GROWI `$lsx` format with `--convert-ls2-to-lsx` option
+- `#ls` - Child page list - Can be converted to GROWI `$lsx` format with `--convert-ls-to-lsx` option
+- `#ls2` - Child page list (enhanced) - Can be converted to GROWI `$lsx` format with `--convert-ls-to-lsx` option
 - `#menu` - Menu display
 - `#online` - Online users display
 - `#popular` - Popular pages ranking
@@ -499,7 +499,17 @@ Output: #freeze additional text
 
 #### GROWI lsx Conversion
 
-When using the `--convert-ls2-to-lsx` option, PukiWiki `#ls2` plugin is converted to GROWI `$lsx` format with relative paths:
+When using the `--convert-ls-to-lsx` option, PukiWiki `#ls` and `#ls2` plugins are converted to GROWI `$lsx` format with relative paths:
+
+**#ls plugin (simple child page list):**
+
+| PukiWiki | GROWI lsx | Notes |
+|----------|-----------|-------|
+| `#ls` | `$lsx(./)` | Current page children |
+| `#ls()` | `$lsx(./)` | Current page children |
+| `#ls(title)` | `<!-- #ls(title) -->`<br>`$lsx(./)` | Unsupported option preserved as comment |
+
+**#ls2 plugin (enhanced child page list with pattern):**
 
 | PukiWiki | GROWI lsx | Notes |
 |----------|-----------|-------|
@@ -509,14 +519,14 @@ When using the `--convert-ls2-to-lsx` option, PukiWiki `#ls2` plugin is converte
 | `#ls2(Page, reverse)` | `$lsx(./relative/path, reverse=true)` | Supported option |
 | `#ls2(Page, title)` | `<!-- #ls2(Page, title) -->`<br>`$lsx(./relative/path)` | Unsupported option preserved as comment |
 
-**Supported options:**
+**Supported options (ls2 only):**
 - `reverse` → `reverse=true`
 
 **Unsupported options (preserved as HTML comment):**
-- `title` - Heading list display
-- `include` - Include page list
-- `compact` - Compact display
-- `link` - Link display
+- `title` - Heading list display (both ls and ls2)
+- `include` - Include page list (ls2 only)
+- `compact` - Compact display (ls2 only)
+- `link` - Link display (ls2 only)
 
 **Custom Plugin Exclusion:**
 
