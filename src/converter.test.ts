@@ -173,33 +173,33 @@ describe("convertToMarkdown", () => {
   });
 
   describe("line break conversion", () => {
-    it("should convert #br to <br>", () => {
+    it("should convert #br to <br> with blank line", () => {
       const input = "#br";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should convert #br() to <br>", () => {
+    it("should convert #br() to <br> with blank line", () => {
       const input = "#br()";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should convert #br with trailing spaces to <br>", () => {
+    it("should convert #br with trailing spaces to <br> with blank line", () => {
       const input = "#br  ";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
-    it("should convert #br() with trailing spaces to <br>", () => {
+    it("should convert #br() with trailing spaces to <br> with blank line", () => {
       const input = "#br()  ";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
     it("should convert #br() with trailing text", () => {
       const input = "#br() 追加テキスト";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -221,13 +221,13 @@ describe("convertToMarkdown", () => {
 
     it("should handle multiple #br on separate lines", () => {
       const input = "テキスト1\n#br\n#br\nテキスト2";
-      const expected = "テキスト1\n<br>\n<br>\nテキスト2";
+      const expected = "テキスト1\n<br>\n\n<br>\n\nテキスト2";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
     it("should handle multiple #br() on separate lines", () => {
       const input = "テキスト1\n#br()\n#br()\nテキスト2";
-      const expected = "テキスト1\n<br>\n<br>\nテキスト2";
+      const expected = "テキスト1\n<br>\n\n<br>\n\nテキスト2";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -241,7 +241,13 @@ describe("convertToMarkdown", () => {
     it("should discard trailing text after #br() without inline formatting", () => {
       const input = "#br() %%%下線%%%";
       // #br() matches and discards trailing text (not converted to separate line)
-      const expected = "<br>";
+      const expected = "<br>\n";
+      expect(convertToMarkdown(input, "テスト")).toBe(expected);
+    });
+
+    it("should ensure following Markdown link is properly parsed", () => {
+      const input = "#br\n[[Link:https://example.com/]]";
+      const expected = "<br>\n\n[Link](https://example.com/)";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
   });

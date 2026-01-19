@@ -323,9 +323,9 @@ When `#ref` is used at the start of a cell, it's processed as a block plugin. Te
 
 ### Line Breaks
 
-| PukiWiki | Markdown |
-|----------|----------|
-| `#br` or `#br()` | `<br>` |
+| PukiWiki | Markdown | Notes |
+|----------|----------|-------|
+| `#br` or `#br()` | `<br>` + blank line | Blank line added to ensure proper Markdown parsing |
 
 ### Preformatted Text
 

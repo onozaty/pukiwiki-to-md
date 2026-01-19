@@ -897,7 +897,8 @@ const convertLineBreak = (
   // Match #br, #br(), or #br() with trailing text
   // Does NOT match #brxxx or #br text
   if (/^#br(\(\).*)?$/i.test(trimmed)) {
-    return { matched: true, lines: ["<br>"] };
+    // Add blank line after <br> to ensure proper Markdown parsing of following lines
+    return { matched: true, lines: ["<br>", ""] };
   }
 
   return { matched: false };
