@@ -1124,6 +1124,18 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should trim spaces inside emphasis markers", () => {
+      const input = "%% 打消し %%";
+      const expected = "~~打消し~~";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should trim full-width spaces inside emphasis markers", () => {
+      const input = "%%　全角　%%";
+      const expected = "~~全角~~";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should handle inline formatting in headings", () => {
       const input = "*''太字の見出し''";
       const expected = "# **太字の見出し**";

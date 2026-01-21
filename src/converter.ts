@@ -969,7 +969,10 @@ const convertInlineFormat = (text: string): string => {
     const noSpaceChars = /^['%*~[\] ]?$/;
     const needSpaceBefore = !noSpaceChars.test(before);
     const needSpaceAfter = !noSpaceChars.test(after);
-    return `${needSpaceBefore ? " " : ""}${marker}${content}${marker}${needSpaceAfter ? " " : ""}`;
+    // Trim content (including full-width spaces) to avoid invalid Markdown
+    // e.g., `~~ text ~~` doesn't render as strikethrough
+    const trimmedContent = content.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
+    return `${needSpaceBefore ? " " : ""}${marker}${trimmedContent}${marker}${needSpaceAfter ? " " : ""}`;
   };
 
   // First, process non-nested inline formats (these don't need to be in the loop)
