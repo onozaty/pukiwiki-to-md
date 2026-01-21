@@ -2168,6 +2168,99 @@ describe("convertToMarkdown", () => {
       });
     });
 
+    describe("format row (|c) with formatting", () => {
+      it("should apply COLOR from |c row to all cells", () => {
+        const input = "|COLOR(red):|COLOR(blue):|c\n|データ1|データ2|";
+        const expected =
+          '|  |  |\n| --- | --- |\n| <span style="color: red">データ1</span> | <span style="color: blue">データ2</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should apply SIZE from |c row to header and data cells", () => {
+        const input = "|SIZE(20):|c\n|ヘッダ|h\n|データ|";
+        const expected =
+          '| <span style="font-size: 20px">ヘッダ</span> |\n| --- |\n| <span style="font-size: 20px">データ</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should allow cell COLOR to override column COLOR", () => {
+        const input = "|COLOR(red):|c\n|COLOR(blue):青|";
+        const expected =
+          '|  |\n| --- |\n| <span style="color: blue">青</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should apply multiple formats from |c row", () => {
+        const input = "|BOLD:SIZE(20):COLOR(red):|c\n|データ|";
+        const expected =
+          '|  |\n| --- |\n| <span style="font-size: 20px; color: red">**データ**</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should apply BGCOLOR from |c row as HTML comment", () => {
+        const input = "|BGCOLOR(yellow):|c\n|データ|";
+        const expected =
+          "|  |\n| --- |\n| データ <!-- BGCOLOR(yellow) --> |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should not apply formatting from empty cells in |c row", () => {
+        const input = "|COLOR(red):||COLOR(blue):|c\n|A|B|C|";
+        const expected =
+          '|  |  |  |\n| --- | --- | --- |\n| <span style="color: red">A</span> | B | <span style="color: blue">C</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine column BOLD with cell ~ header", () => {
+        const input = "|BOLD::|c\n|~ヘッダ|h";
+        const expected = "| **ヘッダ** |\n| --- |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should combine column format with alignment from |c row", () => {
+        const input = "|CENTER:COLOR(red):|c\n|データ|h";
+        const expected =
+          '| <span style="color: red">データ</span> |\n| :---: |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should apply format from |c row appearing before |h row", () => {
+        const input =
+          "|COLOR(red):|SIZE(20):|c\n|ヘッダ1|ヘッダ2|h\n|データ1|データ2|";
+        const expected =
+          '| <span style="color: red">ヘッダ1</span> | <span style="font-size: 20px">ヘッダ2</span> |\n| --- | --- |\n| <span style="color: red">データ1</span> | <span style="font-size: 20px">データ2</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should omit BGCOLOR from |c row when stripComments is true", () => {
+        const input = "|BGCOLOR(yellow):|c\n|データ|";
+        const result = convertToMarkdown(input, "テスト", {
+          stripComments: true,
+        });
+        expect(result).not.toContain("BGCOLOR");
+        expect(result).toBe("|  |\n| --- |\n| データ |");
+      });
+
+      it("should handle uppercase |C format row", () => {
+        const input = "|COLOR(red):|C\n|データ|";
+        const expected =
+          '|  |\n| --- |\n| <span style="color: red">データ</span> |';
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle uppercase |H header row", () => {
+        const input = "|ヘッダ|H\n|データ|";
+        const expected = "| ヘッダ |\n| --- |\n| データ |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+
+      it("should handle uppercase |F footer row", () => {
+        const input = "|データ|F";
+        const expected = "|  |\n| --- |\n| データ |";
+        expect(convertToMarkdown(input, "テスト")).toBe(expected);
+      });
+    });
+
     describe("multiple tables", () => {
       it("should handle multiple tables separated by text", () => {
         const input = "|表1A|表1B|\n\nテキスト\n\n|表2A|表2B|";

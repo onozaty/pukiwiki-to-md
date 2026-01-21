@@ -28,6 +28,17 @@ interface TableRow {
 }
 
 /**
+ * Column-level format specifications from format row (|c)
+ * Applied to all cells in the column unless overridden by cell-level formats
+ */
+interface ColumnFormats {
+  isBold?: boolean;
+  fontSize?: string;
+  color?: string;
+  bgColor?: string;
+}
+
+/**
  * Result of block-level conversion
  * Discriminated union to distinguish between matched and unmatched cases
  */
@@ -1715,11 +1726,11 @@ const generatePreformattedBlock = (lines: string[]): string[] => {
  * @returns Parsed table row or null if not a table row
  */
 const parseTableRow = (line: string): TableRow | null => {
-  const match = line.match(/^\|(.+)\|([hfc])?$/);
+  const match = line.match(/^\|(.+)\|([hfcHFC])?$/);
   if (!match || !match[1]) return null;
 
   const cellsText = match[1];
-  const type = (match[2] || "") as "h" | "f" | "c" | "";
+  const type = (match[2]?.toLowerCase() || "") as "h" | "f" | "c" | "";
   const cells = cellsText.split("|").map(parseTableCell);
 
   return { cells, type };
@@ -1757,6 +1768,98 @@ const determineColumnAligns = (
 };
 
 /**
+ * Determine column-level formats from format row (|c)
+ *
+ * Extracts formatting specifications (COLOR, BGCOLOR, SIZE, BOLD) from the first |c row
+ * and returns them as column-level defaults. These formats are applied to all cells in
+ * their respective columns unless overridden by cell-level formatting.
+ *
+ * @param rows - Table rows
+ * @param columnCount - Number of columns
+ * @returns Array of column formats (index corresponds to column index)
+ */
+const determineColumnFormats = (
+  rows: TableRow[],
+  columnCount: number,
+): ColumnFormats[] => {
+  const formats: ColumnFormats[] = Array(columnCount)
+    .fill(null)
+    .map(() => ({}));
+
+  // Find the first format row (|c)
+  for (const row of rows) {
+    if (row.type === "c") {
+      // Extract formatting from each cell in the format row
+      for (let col = 0; col < columnCount; col++) {
+        const cell = row.cells[col];
+        if (cell) {
+          // Store formatting properties (skip if all are undefined)
+          const hasFormatting =
+            cell.isBold || cell.fontSize || cell.color || cell.bgColor;
+
+          if (hasFormatting) {
+            const colFormat: ColumnFormats = {};
+            if (cell.isBold !== undefined) colFormat.isBold = cell.isBold;
+            if (cell.fontSize !== undefined) colFormat.fontSize = cell.fontSize;
+            if (cell.color !== undefined) colFormat.color = cell.color;
+            if (cell.bgColor !== undefined) colFormat.bgColor = cell.bgColor;
+            formats[col] = colFormat;
+          }
+        }
+      }
+      // Only use the first |c row
+      break;
+    }
+  }
+
+  return formats;
+};
+
+/**
+ * Apply column-level formats to a table cell
+ *
+ * Merges column-level formatting with cell-level formatting, with cell-level
+ * properties taking precedence. This allows format rows (|c) to define defaults
+ * that can be selectively overridden by individual cells.
+ *
+ * @param cell - Table cell
+ * @param columnFormat - Column-level format (may be undefined)
+ * @returns Cell with merged formatting
+ */
+const applyColumnFormats = (
+  cell: TableCell,
+  columnFormat: ColumnFormats | undefined,
+): TableCell => {
+  // If no column format, return cell as-is
+  if (!columnFormat) {
+    return cell;
+  }
+
+  // Merge cell and column formats (cell properties override column properties)
+  const mergedCell: TableCell = {
+    content: cell.content,
+    isHeader: cell.isHeader,
+  };
+
+  // Only add optional properties if they have values
+  if (cell.align !== undefined) mergedCell.align = cell.align;
+
+  const effectiveBold = cell.isBold ?? columnFormat.isBold;
+  if (effectiveBold !== undefined) mergedCell.isBold = effectiveBold;
+
+  const effectiveFontSize = cell.fontSize ?? columnFormat.fontSize;
+  if (effectiveFontSize !== undefined) mergedCell.fontSize = effectiveFontSize;
+
+  const effectiveColor = cell.color ?? columnFormat.color;
+  if (effectiveColor !== undefined) mergedCell.color = effectiveColor;
+
+  const effectiveBgColor = cell.bgColor ?? columnFormat.bgColor;
+  if (effectiveBgColor !== undefined) mergedCell.bgColor = effectiveBgColor;
+
+  return mergedCell;
+};
+
+/**
  * Generate Markdown table from table rows
  *
  * @param rows - Table rows
@@ -1782,6 +1885,9 @@ const generateMarkdownTable = (
   // Determine column alignments
   const columnAligns = determineColumnAligns(rows, columnCount);
 
+  // Determine column-level formatting from |c rows
+  const columnFormats = determineColumnFormats(rows, columnCount);
+
   // If no |h header, add empty header row
   if (!hasHeaderRow) {
     const emptyHeaders = Array(columnCount).fill("");
@@ -1804,21 +1910,24 @@ const generateMarkdownTable = (
     if (row.type === "c") continue;
 
     // Generate cell contents
-    const cells = row.cells.map((cell) => {
-      let content = cell.content;
+    const cells = row.cells.map((cell, colIndex) => {
+      // Apply column-level formatting to cell (cell properties override)
+      const effectiveCell = applyColumnFormats(cell, columnFormats[colIndex]);
+
+      let content = effectiveCell.content;
 
       // Apply cell-specific conversions (both block and inline)
       content = convertCellContent(content, pageName);
 
       // Apply bold formatting (both ~ and BOLD:) only if content is not empty
-      if ((cell.isHeader || cell.isBold) && content.trim() !== "") {
+      if ((effectiveCell.isHeader || effectiveCell.isBold) && content.trim() !== "") {
         content = `**${content}**`;
       }
 
       // Apply SIZE, COLOR with span tags (BGCOLOR is not applied) only if content is not empty
       const styles: string[] = [];
-      if (cell.fontSize) styles.push(`font-size: ${cell.fontSize}px`);
-      if (cell.color) styles.push(`color: ${cell.color}`);
+      if (effectiveCell.fontSize) styles.push(`font-size: ${effectiveCell.fontSize}px`);
+      if (effectiveCell.color) styles.push(`color: ${effectiveCell.color}`);
       // Note: BGCOLOR is not applied here - it will be added as HTML comment
 
       if (styles.length > 0 && content.trim() !== "") {
@@ -1827,8 +1936,8 @@ const generateMarkdownTable = (
 
       // Add BGCOLOR as HTML comment (not converted due to Markdown table limitations)
       // unless stripComments is enabled
-      if (cell.bgColor && !options.stripComments) {
-        content = `${content} <!-- BGCOLOR(${cell.bgColor}) -->`;
+      if (effectiveCell.bgColor && !options.stripComments) {
+        content = `${content} <!-- BGCOLOR(${effectiveCell.bgColor}) -->`;
       }
 
       return content;
