@@ -1112,6 +1112,18 @@ describe("convertToMarkdown", () => {
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
+    it("should convert nested bold and strikethrough", () => {
+      const input = "''%%太字打消%%''";
+      const expected = "**~~太字打消~~**";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should convert nested strikethrough and bold", () => {
+      const input = "%%''打消太字''%%";
+      const expected = "~~**打消太字**~~";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
     it("should handle inline formatting in headings", () => {
       const input = "*''太字の見出し''";
       const expected = "# **太字の見出し**";
@@ -1429,8 +1441,7 @@ describe("convertToMarkdown", () => {
 
       it("should convert internal link with bold in link text", () => {
         const input = "[[''太字''>ページ名]]";
-        // Note: bold conversion adds spaces around ** markers
-        const expected = "[ **太字** ](ページ名.md)";
+        const expected = "[**太字**](ページ名.md)";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
 

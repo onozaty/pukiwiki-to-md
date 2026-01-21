@@ -951,7 +951,7 @@ const convertInlineFormat = (text: string): string => {
   const MAX_ITERATIONS = 10; // Safety limit to prevent infinite loops
 
   // Helper function to add spaces around emphasis markers
-  // Adds spaces unless already present or at line boundaries
+  // Adds spaces unless already present, at line boundaries, or adjacent to other markers
   const addSpacesAroundMarker = (
     match: string,
     content: string,
@@ -959,13 +959,16 @@ const convertInlineFormat = (text: string): string => {
     original: string,
     marker: string,
   ): string => {
-    const before = offset > 0 ? original[offset - 1] : "";
+    const before = offset > 0 ? (original[offset - 1] ?? "") : "";
     const after =
       offset + match.length < original.length
-        ? original[offset + match.length]
+        ? (original[offset + match.length] ?? "")
         : "";
-    const needSpaceBefore = before !== "" && before !== " ";
-    const needSpaceAfter = after !== "" && after !== " ";
+    // Characters that don't need space separation (other markers, brackets, space, empty)
+    // Includes PukiWiki markers (', %) and Markdown markers (*, ~, [, ])
+    const noSpaceChars = /^['%*~[\] ]?$/;
+    const needSpaceBefore = !noSpaceChars.test(before);
+    const needSpaceAfter = !noSpaceChars.test(after);
     return `${needSpaceBefore ? " " : ""}${marker}${content}${marker}${needSpaceAfter ? " " : ""}`;
   };
 
