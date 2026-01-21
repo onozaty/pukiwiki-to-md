@@ -1565,9 +1565,11 @@ const convertAttachments = (text: string, currentPage: string): string => {
  */
 const applyInlineConversions = (text: string, pageName: string): string => {
   let result = text;
-  result = convertInlineFormat(result);
+  // Links must be converted first to preserve [[...]] structure
+  // (inline format like &color inside links would break the structure)
   result = convertLinks(result, pageName);
   result = convertAttachments(result, pageName);
+  result = convertInlineFormat(result);
   return result;
 };
 

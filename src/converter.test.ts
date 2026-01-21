@@ -1420,6 +1420,20 @@ describe("convertToMarkdown", () => {
         expect(convertToMarkdown(input, "ページA")).toBe(expected);
       });
 
+      it("should convert internal link with inline formatting in link text", () => {
+        const input = "[[&color(red){赤文字};>AAA/BBB]]";
+        const expected =
+          '[<span style="color: red">赤文字</span>](AAA/BBB.md)';
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert internal link with bold in link text", () => {
+        const input = "[[''太字''>ページ名]]";
+        // Note: bold conversion adds spaces around ** markers
+        const expected = "[ **太字** ](ページ名.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
       it("should convert internal link with custom text across hierarchy", () => {
         const input = "[[概要へ>プロジェクト/概要]]";
         const expected = "[概要へ](概要.md)";
@@ -1487,6 +1501,13 @@ describe("convertToMarkdown", () => {
       it("should escape brackets in external link text", () => {
         const input = "[[外部[サイト]:https://example.com]]";
         const expected = "[外部\\[サイト\\]](https://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with inline formatting in link text", () => {
+        const input = "[[&color(blue){青文字};:https://example.com]]";
+        const expected =
+          '[<span style="color: blue">青文字</span>](https://example.com)';
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
     });
