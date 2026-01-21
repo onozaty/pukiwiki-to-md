@@ -444,7 +444,8 @@ COLOR(blue):青い文字COLOR(green):緑の文字
 
 | PukiWiki | Markdown | 備考 |
 |----------|----------|------|
-| `[[テキスト:https://example.com]]` | `[テキスト](https://example.com)` | |
+| `[[テキスト:https://example.com]]` | `[テキスト](https://example.com)` | コロン区切り |
+| `[[テキスト>https://example.com]]` | `[テキスト](https://example.com)` | `>` 区切り |
 | `https://example.com` | `https://example.com` | URL直接記述 |
 
 ### 5.5 画像・添付ファイル

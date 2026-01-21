@@ -191,6 +191,7 @@ Internal links are converted to relative paths with minimal URL encoding. Unicod
 | `[[File (1)]]` | `[File (1)](File%20%281%29.md)` |
 | `[[https://example.com]]` | `[https://example.com](https://example.com)` |
 | `[[Label:https://example.com]]` | `[Label](https://example.com)` |
+| `[[Label>https://example.com]]` | `[Label](https://example.com)` |
 
 **Relative Path Resolution:**
 

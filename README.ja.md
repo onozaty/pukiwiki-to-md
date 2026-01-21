@@ -191,6 +191,7 @@ Markdown の特殊文字(`*`、`-`、`+`、`>`、`#`、`|`)を行頭でエスケ
 | `[[File (1)]]` | `[File (1)](File%20%281%29.md)` |
 | `[[https://example.com]]` | `[https://example.com](https://example.com)` |
 | `[[Label:https://example.com]]` | `[Label](https://example.com)` |
+| `[[Label>https://example.com]]` | `[Label](https://example.com)` |
 
 **相対パスの解決:**
 

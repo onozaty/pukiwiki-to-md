@@ -1148,10 +1148,12 @@ const calculateRelativePath = (fromDir: string, toPath: string): string => {
 const convertLinks = (text: string, currentPage: string): string => {
   let converted = text;
 
-  // Convert external links first: [[text:URL]] → [text](URL)
+  // Convert external links: [[text:URL]] or [[text>URL]] → [text](URL)
+  // Supports both : and > separators for external URLs
+  // This must come before internal links with > to avoid treating URLs as page names
   // Match content that doesn't contain ]] to avoid matching across multiple links
   converted = converted.replace(
-    /\[\[((?:(?!\]\]).)+?):(https?:\/\/(?:(?!\]\]).)+?)\]\]/g,
+    /\[\[((?:(?!\]\]).)+?)[:>](https?:\/\/(?:(?!\]\]).)+?)\]\]/g,
     (_, linkText, url) => {
       return `[${escapeMarkdownLinkText(linkText)}](${url})`;
     },

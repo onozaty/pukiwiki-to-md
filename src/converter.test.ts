@@ -1491,6 +1491,57 @@ describe("convertToMarkdown", () => {
       });
     });
 
+    describe("external links with > separator", () => {
+      it("should convert external link with > and HTTP", () => {
+        const input = "[[Example>http://example.com]]";
+        const expected = "[Example](http://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with > and HTTPS", () => {
+        const input = "[[公式サイト>https://example.com]]";
+        const expected = "[公式サイト](https://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with > and path", () => {
+        const input = "[[ドキュメント>https://example.com/docs/index.html]]";
+        const expected = "[ドキュメント](https://example.com/docs/index.html)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with > and query parameters", () => {
+        const input = "[[検索結果>https://example.com/search?q=test&lang=ja]]";
+        const expected =
+          "[検索結果](https://example.com/search?q=test&lang=ja)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should convert external link with > and URL fragment", () => {
+        const input = "[[セクション>https://example.com/page#section]]";
+        const expected = "[セクション](https://example.com/page#section)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should escape brackets in external link text with >", () => {
+        const input = "[[外部[サイト]>https://example.com]]";
+        const expected = "[外部\\[サイト\\]](https://example.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle multiple external links with > separator", () => {
+        const input = "[[サイトA>https://a.com]]と[[サイトB>https://b.com]]";
+        const expected = "[サイトA](https://a.com)と[サイトB](https://b.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should not treat internal page link with > as external URL", () => {
+        const input = "[[テキスト>ページ名]]";
+        const expected = "[テキスト](ページ名.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+    });
+
     describe("mixed links", () => {
       it("should handle internal and external links together", () => {
         const input = "[[内部ページ]]と[[外部:https://example.com]]";
@@ -1502,6 +1553,26 @@ describe("convertToMarkdown", () => {
       it("should handle links with other inline formatting", () => {
         const input = "''太字''の[[リンク]]";
         const expected = "**太字** の[リンク](リンク.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle both : and > separators for external links", () => {
+        const input = "[[サイトA:https://a.com]]と[[サイトB>https://b.com]]";
+        const expected = "[サイトA](https://a.com)と[サイトB](https://b.com)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should distinguish external links with > from internal links with >", () => {
+        const input = "[[外部>https://example.com]]と[[内部>ページ]]";
+        const expected = "[外部](https://example.com)と[内部](ページ.md)";
+        expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+      });
+
+      it("should handle all link types together", () => {
+        const input =
+          "[[ページA]]、[[テキスト>ページB]]、[[外部:https://a.com]]、[[別名>https://b.com]]";
+        const expected =
+          "[ページA](ページA.md)、[テキスト](ページB.md)、[外部](https://a.com)、[別名](https://b.com)";
         expect(convertToMarkdown(input, "テストページ")).toBe(expected);
       });
     });
