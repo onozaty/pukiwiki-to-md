@@ -207,7 +207,16 @@ const convertLine = (
   }
 
   // No block converter matched - apply inline processing
-  return [applyInlineConversions(line, pageName)];
+  const converted = applyInlineConversions(line, pageName);
+
+  // If converted line is only <br> (after trimming both ends),
+  // keep <br> and add a blank line to ensure proper Markdown parsing
+  // This handles cases like "  <br>  " or "&br;" on its own line
+  if (converted.trim() === "<br>") {
+    return ["<br>", ""];
+  }
+
+  return [converted];
 };
 
 /**

@@ -710,7 +710,7 @@ describe("convertToMarkdown", () => {
 
     it("should keep ~ alone on a line", () => {
       const input = "~";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -766,7 +766,7 @@ describe("convertToMarkdown", () => {
 
     it("should handle empty line with ~", () => {
       const input = "~";
-      const expected = "<br>";
+      const expected = "<br>\n";
       expect(convertToMarkdown(input, "テスト")).toBe(expected);
     });
 
@@ -1103,6 +1103,43 @@ describe("convertToMarkdown", () => {
     it("should convert multiple line breaks with parentheses", () => {
       const input = "1行目&br();2行目&br();3行目";
       const expected = "1行目<br>2行目<br>3行目";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add blank line after &br; alone before heading", () => {
+      const input = "&br;\n*見出し";
+      const expected = "<br>\n\n# 見出し";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add blank line after &br; alone before list", () => {
+      const input = "&br;\n-リスト";
+      const expected = "<br>\n\n- リスト";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should add blank line after &br; with trailing spaces", () => {
+      const input = "&br;  \n*見出し";
+      const expected = "<br>\n\n# 見出し";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add blank line for &br; with preceding text", () => {
+      const input = "テキスト&br;";
+      const expected = "テキスト<br>";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add blank line for mid-line &br;", () => {
+      const input = "テキスト&br;続き";
+      const expected = "テキスト<br>続き";
+      expect(convertToMarkdown(input, "テストページ")).toBe(expected);
+    });
+
+    it("should not add blank line for &br; in table cell", () => {
+      const input = "|セル1&br;2行目|セル2|";
+      const expected =
+        "|  |  |\n| --- | --- |\n| セル1<br>2行目 | セル2 |";
       expect(convertToMarkdown(input, "テストページ")).toBe(expected);
     });
 
